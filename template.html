@@ -1,0 +1,821 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>JobRadar | Briks</title>
+<style>
+/* ── Variables Briks ─────────────────────────────────────────── */
+:root {
+  --orange:     #E85D1A;
+  --orange-bg:  #FDE8DC;
+  --orange-dark:#C24A10;
+  --purple:     #6B52B8;
+  --purple-bg:  #EDE8F8;
+  --purple-dark:#553FA0;
+  --dark:       #1B1A3A;
+  --dark2:      #2A2950;
+  --dark3:      #3A3870;
+  --green:      #1D9E75;
+  --green-bg:   #E1F5EE;
+  --red:        #C0392B;
+  --red-bg:     #FCEBEB;
+  --yellow:     #BA7517;
+  --yellow-bg:  #FAEEDA;
+  --bg:         #F7F7FC;
+  --bg2:        #EEEDF8;
+  --bg3:        #E0DEEF;
+  --txt:        #1B1A3A;
+  --txt2:       #5A5878;
+  --txt3:       #9090AA;
+  --border:     #D8D6EC;
+  --radius:     10px;
+  --shadow:     0 2px 8px rgba(27,26,58,.08);
+  --shadow-lg:  0 4px 20px rgba(27,26,58,.14);
+  --sidebar-w:  280px;
+  --header-h:   56px;
+}
+
+/* ── Reset ────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 14px;
+  background: var(--bg);
+  color: var(--txt);
+  line-height: 1.5;
+}
+a { color: inherit; text-decoration: none; }
+button { cursor: pointer; border: none; background: none; font: inherit; }
+input { font: inherit; }
+
+/* ── Login overlay ────────────────────────────────────────────── */
+#login-overlay {
+  position: fixed; inset: 0; z-index: 9999;
+  background: var(--dark);
+  display: flex; align-items: center; justify-content: center;
+  background-image:
+    repeating-linear-gradient(0deg, transparent, transparent 28px, rgba(255,255,255,.03) 28px, rgba(255,255,255,.03) 30px),
+    repeating-linear-gradient(90deg, transparent, transparent 28px, rgba(255,255,255,.03) 28px, rgba(255,255,255,.03) 30px);
+}
+.login-box {
+  background: var(--dark2);
+  border: 1px solid var(--dark3);
+  border-radius: 16px;
+  padding: 40px 48px;
+  width: 360px;
+  text-align: center;
+  box-shadow: 0 20px 60px rgba(0,0,0,.4);
+}
+.login-logo {
+  display: inline-flex; align-items: center; gap: 10px;
+  margin-bottom: 28px;
+}
+.login-logo .brick {
+  width: 36px; height: 36px;
+  background: var(--orange);
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px;
+}
+.login-logo span {
+  font-size: 22px; font-weight: 800; color: #fff;
+  letter-spacing: .5px;
+}
+.login-box h2 {
+  color: rgba(255,255,255,.6);
+  font-size: 13px; font-weight: 500;
+  margin-bottom: 24px; letter-spacing: .5px; text-transform: uppercase;
+}
+.login-box input {
+  width: 100%; padding: 12px 16px;
+  background: rgba(255,255,255,.07);
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: 8px; color: #fff;
+  font-size: 15px; margin-bottom: 12px;
+  outline: none; transition: border-color .2s;
+}
+.login-box input:focus { border-color: var(--orange); }
+.login-box input::placeholder { color: rgba(255,255,255,.3); }
+.login-btn {
+  width: 100%; padding: 12px;
+  background: var(--orange); color: #fff;
+  border-radius: 8px; font-size: 15px; font-weight: 700;
+  letter-spacing: .3px; transition: background .2s;
+}
+.login-btn:hover { background: var(--orange-dark); }
+.login-error {
+  color: #ff6b6b; font-size: 12px; margin-top: 8px; display: none;
+}
+
+/* ── Header ───────────────────────────────────────────────────── */
+header {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  height: var(--header-h);
+  background: var(--dark);
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 20px;
+  box-shadow: 0 2px 12px rgba(0,0,0,.3);
+}
+.hdr-logo {
+  display: flex; align-items: center; gap: 10px;
+}
+.hdr-brick {
+  width: 28px; height: 28px; background: var(--orange);
+  border-radius: 6px; display: flex; align-items: center; justify-content: center;
+  font-size: 14px;
+}
+.hdr-logo .brand {
+  font-size: 16px; font-weight: 800; color: #fff; letter-spacing: .5px;
+}
+.hdr-logo .brand span { color: var(--orange); }
+.hdr-meta {
+  font-size: 12px; color: rgba(255,255,255,.45);
+  display: flex; align-items: center; gap: 16px;
+}
+.hdr-meta strong { color: rgba(255,255,255,.8); font-weight: 600; }
+.hdr-sector {
+  background: rgba(232,93,26,.15); color: var(--orange);
+  border: 1px solid rgba(232,93,26,.3);
+  padding: 3px 10px; border-radius: 20px;
+  font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .5px;
+}
+
+/* ── Layout ───────────────────────────────────────────────────── */
+#app { display: none; }
+.layout {
+  display: flex;
+  margin-top: var(--header-h);
+  min-height: calc(100vh - var(--header-h));
+}
+
+/* ── Sidebar ──────────────────────────────────────────────────── */
+aside {
+  width: var(--sidebar-w);
+  min-width: var(--sidebar-w);
+  background: #fff;
+  border-right: 1px solid var(--border);
+  padding: 16px 12px;
+  height: calc(100vh - var(--header-h));
+  overflow-y: auto;
+  position: sticky;
+  top: var(--header-h);
+}
+aside::-webkit-scrollbar { width: 4px; }
+aside::-webkit-scrollbar-thumb { background: var(--bg3); border-radius: 2px; }
+
+.search-wrap {
+  position: relative; margin-bottom: 16px;
+}
+.search-wrap input {
+  width: 100%; padding: 9px 12px 9px 34px;
+  border: 1px solid var(--border); border-radius: var(--radius);
+  background: var(--bg); color: var(--txt); font-size: 13px;
+  outline: none; transition: border-color .2s;
+}
+.search-wrap input:focus { border-color: var(--orange); }
+.search-wrap::before {
+  content: '🔍'; position: absolute; left: 10px; top: 50%;
+  transform: translateY(-50%); font-size: 13px; pointer-events: none;
+}
+
+.filter-section { margin-bottom: 18px; }
+.filter-section h4 {
+  font-size: 10px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .8px; color: var(--txt3); margin-bottom: 8px;
+  padding: 0 4px;
+}
+
+.filter-pills { display: flex; flex-wrap: wrap; gap: 5px; }
+.pill {
+  padding: 4px 10px; border-radius: 20px;
+  font-size: 12px; font-weight: 500; cursor: pointer;
+  border: 1px solid var(--border); background: var(--bg);
+  color: var(--txt2); transition: all .15s;
+  white-space: nowrap;
+}
+.pill:hover { border-color: var(--orange); color: var(--orange); }
+.pill.active {
+  background: var(--orange); border-color: var(--orange);
+  color: #fff; font-weight: 600;
+}
+
+/* Couleurs spécifiques par section */
+.pill.cat.active { background: var(--purple); border-color: var(--purple); }
+.pill.loc.active { background: var(--dark); border-color: var(--dark); }
+.pill.src.active { background: var(--green); border-color: var(--green); }
+.pill.crm.active { background: var(--orange); border-color: var(--orange); }
+
+.filter-sep {
+  height: 1px; background: var(--border); margin: 12px 0;
+}
+
+/* ── Active chips ─────────────────────────────────────────────── */
+#chips-bar {
+  display: flex; flex-wrap: wrap; gap: 6px;
+  padding: 10px 20px; background: var(--bg2);
+  border-bottom: 1px solid var(--border); min-height: 0;
+}
+#chips-bar:empty { display: none; }
+.chip {
+  display: flex; align-items: center; gap: 5px;
+  padding: 4px 10px; border-radius: 20px;
+  background: var(--orange); color: #fff;
+  font-size: 12px; font-weight: 600;
+}
+.chip button {
+  color: rgba(255,255,255,.8); font-size: 14px;
+  line-height: 1; padding: 0 2px;
+}
+.chip button:hover { color: #fff; }
+
+/* ── Main content ─────────────────────────────────────────────── */
+main {
+  flex: 1; padding: 20px;
+  max-width: calc(100vw - var(--sidebar-w));
+}
+.main-header {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 16px;
+}
+.results-count {
+  font-size: 13px; color: var(--txt2);
+}
+.results-count strong { color: var(--txt); }
+
+.sort-select {
+  padding: 6px 10px; border: 1px solid var(--border);
+  border-radius: 8px; background: #fff; font-size: 12px;
+  color: var(--txt); cursor: pointer; outline: none;
+}
+
+/* ── Jobs grid ────────────────────────────────────────────────── */
+#jobs-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 12px;
+}
+
+/* ── Job card ─────────────────────────────────────────────────── */
+.job-card {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px;
+  display: flex; gap: 12px;
+  transition: box-shadow .15s, border-color .15s;
+  position: relative;
+  cursor: pointer;
+}
+.job-card:hover {
+  box-shadow: var(--shadow-lg);
+  border-color: var(--orange);
+}
+.job-card.saved { border-color: var(--orange); background: #FFFBF9; }
+.job-card.is-recruiter { border-left: 3px solid var(--yellow); }
+.job-card.is-client { border-left: 3px solid var(--green); }
+
+/* Logo entreprise */
+.co-logo {
+  width: 40px; height: 40px; border-radius: 8px;
+  background: var(--bg2); border: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; font-weight: 700; color: var(--purple);
+  flex-shrink: 0; text-transform: uppercase; overflow: hidden;
+}
+
+/* Corps de la carte */
+.jbody { flex: 1; min-width: 0; }
+.jtop { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+.jtitle {
+  font-size: 13px; font-weight: 700; color: var(--txt);
+  line-height: 1.3; flex: 1;
+}
+.job-card:hover .jtitle { color: var(--orange); }
+
+.jright { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex-shrink: 0; }
+.jdate { font-size: 11px; color: var(--txt3); }
+.save-btn {
+  font-size: 16px; color: var(--txt3); padding: 0;
+  transition: color .15s, transform .15s;
+}
+.save-btn:hover, .save-btn.on { color: var(--orange); transform: scale(1.2); }
+
+.jco {
+  font-size: 12px; font-weight: 600; color: var(--txt2);
+  margin: 4px 0 6px; white-space: nowrap; overflow: hidden;
+  text-overflow: ellipsis;
+}
+.jmeta { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+
+/* Badges */
+.badge {
+  padding: 2px 7px; border-radius: 12px; font-size: 11px; font-weight: 600;
+  white-space: nowrap;
+}
+.badge-loc { background: var(--bg2); color: var(--txt2); }
+.badge-cat { background: var(--purple-bg); color: var(--purple); }
+.badge-size { background: var(--bg2); color: var(--txt3); }
+.badge-src  { font-size: 10px; }
+
+/* Source badges */
+.src-ft    { background: #E6F0FB; color: #1D5FA8; }
+.src-apec  { background: var(--green-bg); color: var(--green); }
+.src-wttj  { background: #E6FAF1; color: #04A769; }
+.src-hw    { background: #FEF0E6; color: #D65F1A; }
+.src-linrec{ background: var(--purple-bg); color: var(--purple); }
+
+/* CRM indicators */
+.crm-indicators { display: flex; gap: 4px; align-items: center; }
+.crm-dot {
+  width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+}
+.crm-dot.tc       { background: var(--green); }
+.crm-dot.open-job { background: var(--orange); }
+.crm-dot.prospect { background: var(--yellow); }
+.crm-link {
+  font-size: 10px; color: var(--txt3); text-decoration: none;
+  padding: 1px 5px; border: 1px solid var(--border); border-radius: 4px;
+  transition: color .15s, border-color .15s;
+}
+.crm-link:hover { color: var(--orange); border-color: var(--orange); }
+.consultant-badge {
+  font-size: 10px; background: var(--dark); color: #fff;
+  padding: 1px 6px; border-radius: 4px; font-weight: 600;
+}
+
+/* ── No results ───────────────────────────────────────────────── */
+#no-results {
+  display: none; text-align: center; padding: 60px 20px; color: var(--txt2);
+}
+#no-results h3 { font-size: 18px; margin-bottom: 8px; }
+#no-results p { font-size: 14px; }
+
+/* ── Saved toggle ─────────────────────────────────────────────── */
+.saved-toggle {
+  display: flex; align-items: center; gap: 6px;
+  padding: 6px 10px; border: 1px solid var(--border);
+  border-radius: 8px; background: #fff; font-size: 12px;
+  color: var(--txt2); cursor: pointer; transition: all .15s;
+}
+.saved-toggle:hover, .saved-toggle.active {
+  border-color: var(--orange); color: var(--orange);
+}
+
+/* ── Scrollbar ────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-thumb { background: var(--bg3); border-radius: 3px; }
+
+/* ── Responsive ───────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  aside { display: none; }
+  main { max-width: 100vw; }
+  #jobs-list { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<!-- ══════════════ LOGIN ══════════════ -->
+<div id="login-overlay">
+  <div class="login-box">
+    <div class="login-logo">
+      <div class="brick">🧱</div>
+      <span>BRIKS</span>
+    </div>
+    <h2>JobRadar — Accès privé</h2>
+    <input type="password" id="pwd-input" placeholder="Mot de passe"
+           onkeydown="if(event.key==='Enter')tryLogin()">
+    <button class="login-btn" onclick="tryLogin()">Accéder</button>
+    <div class="login-error" id="login-error">Mot de passe incorrect</div>
+  </div>
+</div>
+
+<!-- ══════════════ APP ══════════════ -->
+<div id="app">
+
+  <!-- Header -->
+  <header>
+    <div class="hdr-logo">
+      <div class="hdr-brick">🧱</div>
+      <div class="brand">JOB<span>RADAR</span> &nbsp;|&nbsp; BRIKS</div>
+    </div>
+    <div class="hdr-meta">
+      <div class="hdr-sector">Immobilier · Construction · BTP</div>
+      <div>Mis à jour : <strong id="meta-date">—</strong></div>
+      <div><strong id="meta-total">0</strong> offres</div>
+    </div>
+  </header>
+
+  <div class="layout">
+
+    <!-- ── Sidebar ── -->
+    <aside>
+
+      <!-- Recherche texte -->
+      <div class="search-wrap">
+        <input type="text" id="search-input" placeholder="Rechercher un poste, entreprise…"
+               oninput="applyFilters()">
+      </div>
+
+      <!-- Catégories -->
+      <div class="filter-section">
+        <h4>Catégorie</h4>
+        <div class="filter-pills" id="cat-pills">
+          <div class="pill cat" onclick="toggleFilter('cat','Promotion Immobilière',this)">Promotion Immo</div>
+          <div class="pill cat" onclick="toggleFilter('cat','Transaction / Vente',this)">Transaction / Vente</div>
+          <div class="pill cat" onclick="toggleFilter('cat','Asset & Property Management',this)">Asset & Property Mgt</div>
+          <div class="pill cat" onclick="toggleFilter('cat','Expertise / Évaluation',this)">Expertise / Éval.</div>
+          <div class="pill cat" onclick="toggleFilter('cat','Architecture & Urbanisme',this)">Architecture</div>
+          <div class="pill cat" onclick="toggleFilter('cat','Maîtrise d\'Œuvre',this)">MOE / MOA</div>
+          <div class="pill cat" onclick="toggleFilter('cat','Bureau d\'Études / Ingénierie',this)">Bureau d'Études</div>
+          <div class="pill cat" onclick="toggleFilter('cat','Conduite de Travaux',this)">Conduite Travaux</div>
+          <div class="pill cat" onclick="toggleFilter('cat','Commercial / Foncier',this)">Commercial / Foncier</div>
+          <div class="pill cat" onclick="toggleFilter('cat','Juridique & Finance Immo',this)">Juridique & Finance</div>
+          <div class="pill cat" onclick="toggleFilter('cat','Support & Admin',this)">Support & Admin</div>
+        </div>
+      </div>
+
+      <div class="filter-sep"></div>
+
+      <!-- Localisation -->
+      <div class="filter-section">
+        <h4>Localisation</h4>
+        <div class="filter-pills">
+          <div class="pill loc" onclick="toggleFilter('loc','Paris',this)">Paris</div>
+          <div class="pill loc" onclick="toggleFilter('loc','Île-de-France',this)">Île-de-France</div>
+          <div class="pill loc" onclick="toggleFilter('loc','Lyon',this)">Lyon</div>
+          <div class="pill loc" onclick="toggleFilter('loc','Marseille',this)">Marseille</div>
+          <div class="pill loc" onclick="toggleFilter('loc','Bordeaux',this)">Bordeaux</div>
+          <div class="pill loc" onclick="toggleFilter('loc','Toulouse',this)">Toulouse</div>
+          <div class="pill loc" onclick="toggleFilter('loc','Nantes',this)">Nantes</div>
+          <div class="pill loc" onclick="toggleFilter('loc','Lille',this)">Lille</div>
+          <div class="pill loc" onclick="toggleFilter('loc','Télétravail',this)">Télétravail</div>
+        </div>
+      </div>
+
+      <div class="filter-sep"></div>
+
+      <!-- Sources -->
+      <div class="filter-section">
+        <h4>Source</h4>
+        <div class="filter-pills">
+          <div class="pill src" onclick="toggleFilter('src','France Travail',this)">France Travail</div>
+          <div class="pill src" onclick="toggleFilter('src','APEC',this)">APEC</div>
+          <div class="pill src" onclick="toggleFilter('src','Welcome to the Jungle',this)">WTTJ</div>
+          <div class="pill src" onclick="toggleFilter('src','HelloWork',this)">HelloWork</div>
+          <div class="pill src" onclick="toggleFilter('src','L\'Industrie Recrute',this)">L'Industrie Recrute</div>
+        </div>
+      </div>
+
+      <div class="filter-sep"></div>
+
+      <!-- Ancienneté -->
+      <div class="filter-section">
+        <h4>Publiée depuis</h4>
+        <div class="filter-pills">
+          <div class="pill" onclick="toggleFilter('age',3,this)">3 jours</div>
+          <div class="pill" onclick="toggleFilter('age',7,this)">7 jours</div>
+          <div class="pill" onclick="toggleFilter('age',14,this)">14 jours</div>
+          <div class="pill" onclick="toggleFilter('age',30,this)">30 jours</div>
+          <div class="pill" onclick="toggleFilter('age',60,this)">60 jours</div>
+        </div>
+      </div>
+
+      <div class="filter-sep"></div>
+
+      <!-- Taille entreprise -->
+      <div class="filter-section">
+        <h4>Taille entreprise</h4>
+        <div class="filter-pills">
+          <div class="pill" onclick="toggleFilter('size','≤10',this)">≤10</div>
+          <div class="pill" onclick="toggleFilter('size','11–50',this)">11–50</div>
+          <div class="pill" onclick="toggleFilter('size','51–200',this)">51–200</div>
+          <div class="pill" onclick="toggleFilter('size','201–1k',this)">201–1k</div>
+          <div class="pill" onclick="toggleFilter('size','1k–5k',this)">1k–5k</div>
+          <div class="pill" onclick="toggleFilter('size','5k+',this)">5k+</div>
+        </div>
+      </div>
+
+      <div class="filter-sep"></div>
+
+      <!-- CRM -->
+      <div class="filter-section">
+        <h4>CRM RecruitCRM</h4>
+        <div class="filter-pills">
+          <div class="pill crm" onclick="toggleFilter('crm','tc',this)">T&Cs signés</div>
+          <div class="pill crm" onclick="toggleFilter('crm','open',this)">Job ouvert</div>
+          <div class="pill crm" onclick="toggleFilter('crm','client',this)">Client actif</div>
+          <div class="pill crm" onclick="toggleFilter('crm','no-crm',this)">Hors CRM</div>
+        </div>
+      </div>
+
+      <div class="filter-sep"></div>
+
+      <!-- Cabinets -->
+      <div class="filter-section">
+        <h4>Type</h4>
+        <div class="filter-pills">
+          <div class="pill" onclick="toggleFilter('recruiter','hide',this)">Masquer cabinets RH</div>
+          <div class="pill" onclick="toggleFilter('recruiter','only',this)">Cabinets uniquement</div>
+        </div>
+      </div>
+
+    </aside>
+
+    <!-- ── Main ── -->
+    <div style="flex:1; display:flex; flex-direction:column; min-width:0;">
+
+      <!-- Chips des filtres actifs -->
+      <div id="chips-bar"></div>
+
+      <main>
+        <div class="main-header">
+          <div class="results-count">
+            <strong id="count-display">0</strong> offres affichées
+          </div>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <button class="saved-toggle" id="saved-toggle" onclick="toggleSavedOnly()">
+              ♥ Favoris (<span id="saved-count">0</span>)
+            </button>
+            <select class="sort-select" id="sort-select" onchange="applyFilters()">
+              <option value="date">Tri : Plus récent</option>
+              <option value="company">Tri : Entreprise A→Z</option>
+              <option value="crm">Tri : T&Cs d'abord</option>
+            </select>
+          </div>
+        </div>
+
+        <div id="jobs-list"></div>
+        <div id="no-results">
+          <h3>🏗️ Aucune offre trouvée</h3>
+          <p>Essayez d'élargir vos filtres.</p>
+        </div>
+      </main>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════════════
+// AUTH
+// ══════════════════════════════════════════════════════════════
+var _ak = 'briks_jr_auth_v1';
+var _ex = 'QnJpa3M5OTkh'; // btoa("Briks999!")
+
+function _initAuth() {
+  var ov = document.getElementById('login-overlay');
+  if (localStorage.getItem(_ak) === _ex) {
+    ov.style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    initApp();
+    return;
+  }
+  ov.style.display = 'flex';
+}
+
+function tryLogin() {
+  var v = document.getElementById('pwd-input').value;
+  var err = document.getElementById('login-error');
+  if (btoa(v) === _ex) {
+    localStorage.setItem(_ak, _ex);
+    document.getElementById('login-overlay').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    initApp();
+  } else {
+    err.style.display = 'block';
+    document.getElementById('pwd-input').classList.add('shake');
+    setTimeout(() => {
+      err.style.display = 'none';
+      document.getElementById('pwd-input').classList.remove('shake');
+    }, 2500);
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+// DATA (injecté par fetch.py)
+// ══════════════════════════════════════════════════════════════
+var JOBS = /* __JOBS_JSON__ */[];
+var META = /* __META_JSON__ */{"updated":"—","total":0};
+
+// ══════════════════════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════════════════════
+var filters = { cat: new Set(), loc: new Set(), src: new Set(), age: null, size: new Set(), crm: new Set(), recruiter: null };
+var savedIds = new Set(JSON.parse(localStorage.getItem('briks_saved') || '[]'));
+var savedOnly = false;
+
+// ══════════════════════════════════════════════════════════════
+// FILTERS
+// ══════════════════════════════════════════════════════════════
+function toggleFilter(type, value, el) {
+  if (type === 'age') {
+    if (filters.age === value) { filters.age = null; el.classList.remove('active'); }
+    else {
+      document.querySelectorAll('.pill').forEach(p => { if (p !== el && p.onclick && p.onclick.toString().includes("'age'")) p.classList.remove('active'); });
+      filters.age = value; el.classList.add('active');
+    }
+  } else if (type === 'recruiter') {
+    if (filters.recruiter === value) { filters.recruiter = null; el.classList.remove('active'); }
+    else {
+      document.querySelectorAll('.pill').forEach(p => { if (p !== el && p.onclick && p.onclick.toString().includes("'recruiter'")) p.classList.remove('active'); });
+      filters.recruiter = value; el.classList.add('active');
+    }
+  } else {
+    var set = filters[type];
+    if (set.has(value)) { set.delete(value); el.classList.remove('active'); }
+    else { set.add(value); el.classList.add('active'); }
+  }
+  applyFilters();
+  updateChips();
+}
+
+function updateChips() {
+  var bar = document.getElementById('chips-bar');
+  bar.innerHTML = '';
+  var add = (label, clear) => {
+    var c = document.createElement('div'); c.className = 'chip';
+    c.innerHTML = label + '<button onclick="' + clear + '">×</button>';
+    bar.appendChild(c);
+  };
+  filters.cat.forEach(v => add(v, "removeFilter('cat','"+v+"')"));
+  filters.loc.forEach(v => add(v, "removeFilter('loc','"+v+"')"));
+  filters.src.forEach(v => add(v, "removeFilter('src','"+v+"')"));
+  filters.size.forEach(v => add(v, "removeFilter('size','"+v+"')"));
+  filters.crm.forEach(v => add(crmLabel(v), "removeFilter('crm','"+v+"')"));
+  if (filters.age) add('≤ '+filters.age+' j', "removeFilter('age',null)");
+  if (filters.recruiter) add(filters.recruiter === 'hide' ? 'Sans cabinets' : 'Cabinets seuls', "removeFilter('recruiter',null)");
+}
+
+function crmLabel(v) {
+  return {tc:'T&Cs', open:'Job ouvert', client:'Client actif', 'no-crm':'Hors CRM'}[v] || v;
+}
+
+function removeFilter(type, value) {
+  if (type === 'age' || type === 'recruiter') {
+    filters[type] = null;
+    document.querySelectorAll('.pill').forEach(p => {
+      if (p.onclick && p.onclick.toString().includes("'"+type+"'")) p.classList.remove('active');
+    });
+  } else {
+    filters[type].delete(value);
+    document.querySelectorAll('.pill').forEach(p => {
+      if (p.classList.contains('active') && p.onclick && p.onclick.toString().includes("'"+value+"'")) p.classList.remove('active');
+    });
+  }
+  applyFilters();
+  updateChips();
+}
+
+function toggleSavedOnly() {
+  savedOnly = !savedOnly;
+  var btn = document.getElementById('saved-toggle');
+  btn.classList.toggle('active', savedOnly);
+  applyFilters();
+}
+
+// ══════════════════════════════════════════════════════════════
+// APPLY FILTERS
+// ══════════════════════════════════════════════════════════════
+function applyFilters() {
+  var q = (document.getElementById('search-input').value || '').toLowerCase().trim();
+  var sortMode = document.getElementById('sort-select').value;
+
+  var filtered = JOBS.filter(j => {
+    if (savedOnly && !savedIds.has(j.id)) return false;
+    if (q && !((j.title||'').toLowerCase().includes(q) || (j.company||'').toLowerCase().includes(q) || (j.location||'').toLowerCase().includes(q))) return false;
+    if (filters.cat.size && !filters.cat.has(j.category)) return false;
+    if (filters.loc.size && !locMatch(j.location, filters.loc)) return false;
+    if (filters.src.size && !filters.src.has(j.source)) return false;
+    if (filters.age && (j.days_old || 999) > filters.age) return false;
+    if (filters.size.size && !filters.size.has(j.size)) return false;
+    if (filters.crm.size) {
+      var ok = false;
+      if (filters.crm.has('tc') && j.has_tc) ok = true;
+      if (filters.crm.has('open') && j.has_open_job) ok = true;
+      if (filters.crm.has('client') && j.is_client) ok = true;
+      if (filters.crm.has('no-crm') && !j.crm_link) ok = true;
+      if (!ok) return false;
+    }
+    if (filters.recruiter === 'hide' && j.is_recruiter) return false;
+    if (filters.recruiter === 'only' && !j.is_recruiter) return false;
+    return true;
+  });
+
+  // Sort
+  if (sortMode === 'date') filtered.sort((a,b) => (a.days_old||999) - (b.days_old||999));
+  else if (sortMode === 'company') filtered.sort((a,b) => (a.company||'').localeCompare(b.company||''));
+  else if (sortMode === 'crm') filtered.sort((a,b) => {
+    if (a.has_tc !== b.has_tc) return a.has_tc ? -1 : 1;
+    return (a.days_old||999) - (b.days_old||999);
+  });
+
+  renderJobs(filtered);
+  document.getElementById('count-display').textContent = filtered.length;
+}
+
+function locMatch(loc, set) {
+  if (!loc) return false;
+  var l = loc.toLowerCase();
+  for (var v of set) {
+    var vl = v.toLowerCase();
+    if (l.includes(vl) || vl.includes(l)) return true;
+  }
+  return false;
+}
+
+// ══════════════════════════════════════════════════════════════
+// RENDER
+// ══════════════════════════════════════════════════════════════
+function renderJobs(jobs) {
+  var list = document.getElementById('jobs-list');
+  var noRes = document.getElementById('no-results');
+  if (!jobs.length) { list.innerHTML = ''; noRes.style.display = 'block'; return; }
+  noRes.style.display = 'none';
+
+  list.innerHTML = jobs.map(j => {
+    var saved = savedIds.has(j.id);
+    var initials = (j.company || '??').split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();
+    var age = j.days_old <= 1 ? 'Aujourd\'hui' : j.days_old === 2 ? 'Hier' : j.days_old + ' j';
+    var srcClass = srcBadgeClass(j.source);
+    var cardClass = 'job-card' + (saved ? ' saved' : '') + (j.is_client ? ' is-client' : j.is_recruiter ? ' is-recruiter' : '');
+
+    var crmHtml = '';
+    if (j.has_tc || j.has_open_job || j.is_client || j.consultant) {
+      crmHtml = '<div class="crm-indicators" style="margin-top:5px;">';
+      if (j.has_tc) crmHtml += '<div class="crm-dot tc" title="T&Cs signés"></div>';
+      if (j.has_open_job) crmHtml += '<div class="crm-dot open-job" title="Job ouvert"></div>';
+      if (j.crm_link) crmHtml += '<a class="crm-link" href="'+j.crm_link+'" target="_blank" onclick="event.stopPropagation()">CRM</a>';
+      if (j.consultant) crmHtml += '<span class="consultant-badge">'+escHtml(j.consultant)+'</span>';
+      crmHtml += '</div>';
+    }
+
+    return `<div class="${cardClass}" onclick="openJob('${escHtml(j.url)}')">
+  <div class="co-logo">${initials}</div>
+  <div class="jbody">
+    <div class="jtop">
+      <span class="jtitle">${escHtml(j.title)}</span>
+      <div class="jright">
+        <span class="jdate">${age}</span>
+        <button class="save-btn${saved?' on':''}" onclick="event.stopPropagation();toggleSave('${j.id}',this)" title="Sauvegarder">${saved?'♥':'♡'}</button>
+      </div>
+    </div>
+    <div class="jco">${escHtml(j.company || '—')}</div>
+    <div class="jmeta">
+      ${j.location ? '<span class="badge badge-loc">📍 '+escHtml(j.location)+'</span>' : ''}
+      ${j.category ? '<span class="badge badge-cat">'+escHtml(j.category)+'</span>' : ''}
+      ${j.size ? '<span class="badge badge-size">'+escHtml(j.size)+'</span>' : ''}
+      <span class="badge badge-src ${srcClass}">${escHtml(j.source)}</span>
+    </div>
+    ${crmHtml}
+  </div>
+</div>`;
+  }).join('');
+}
+
+function srcBadgeClass(src) {
+  if (!src) return '';
+  var s = src.toLowerCase();
+  if (s.includes('france travail')) return 'src-ft';
+  if (s.includes('apec')) return 'src-apec';
+  if (s.includes('jungle') || s.includes('wttj')) return 'src-wttj';
+  if (s.includes('hellowork') || s.includes('hello work')) return 'src-hw';
+  if (s.includes('industrie')) return 'src-linrec';
+  return '';
+}
+
+function openJob(url) {
+  if (url) window.open(url, '_blank');
+}
+
+function escHtml(s) {
+  if (!s) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ══════════════════════════════════════════════════════════════
+// SAVED JOBS
+// ══════════════════════════════════════════════════════════════
+function toggleSave(id, btn) {
+  if (savedIds.has(id)) { savedIds.delete(id); btn.textContent = '♡'; btn.classList.remove('on'); }
+  else { savedIds.add(id); btn.textContent = '♥'; btn.classList.add('on'); }
+  localStorage.setItem('briks_saved', JSON.stringify([...savedIds]));
+  document.getElementById('saved-count').textContent = savedIds.size;
+  if (savedOnly) applyFilters();
+}
+
+// ══════════════════════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════════════════════
+function initApp() {
+  document.getElementById('meta-date').textContent = META.updated || '—';
+  document.getElementById('meta-total').textContent = JOBS.length;
+  document.getElementById('saved-count').textContent = savedIds.size;
+  applyFilters();
+}
+
+// Boot
+_initAuth();
+</script>
+</body>
+</html>
