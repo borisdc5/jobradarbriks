@@ -1,0 +1,821 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>JobRadar | Briks</title>
+<style>
+/* ── Variables Briks ─────────────────────────────────────────── */
+:root {
+  --orange:     #E85D1A;
+  --orange-bg:  #FDE8DC;
+  --orange-dark:#C24A10;
+  --purple:     #6B52B8;
+  --purple-bg:  #EDE8F8;
+  --purple-dark:#553FA0;
+  --dark:       #1B1A3A;
+  --dark2:      #2A2950;
+  --dark3:      #3A3870;
+  --green:      #1D9E75;
+  --green-bg:   #E1F5EE;
+  --red:        #C0392B;
+  --red-bg:     #FCEBEB;
+  --yellow:     #BA7517;
+  --yellow-bg:  #FAEEDA;
+  --bg:         #F7F7FC;
+  --bg2:        #EEEDF8;
+  --bg3:        #E0DEEF;
+  --txt:        #1B1A3A;
+  --txt2:       #5A5878;
+  --txt3:       #9090AA;
+  --border:     #D8D6EC;
+  --radius:     10px;
+  --shadow:     0 2px 8px rgba(27,26,58,.08);
+  --shadow-lg:  0 4px 20px rgba(27,26,58,.14);
+  --sidebar-w:  280px;
+  --header-h:   56px;
+}
+
+/* ── Reset ────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 14px;
+  background: var(--bg);
+  color: var(--txt);
+  line-height: 1.5;
+}
+a { color: inherit; text-decoration: none; }
+button { cursor: pointer; border: none; background: none; font: inherit; }
+input { font: inherit; }
+
+/* ── Login overlay ────────────────────────────────────────────── */
+#login-overlay {
+  position: fixed; inset: 0; z-index: 9999;
+  background: var(--dark);
+  display: flex; align-items: center; justify-content: center;
+  background-image:
+    repeating-linear-gradient(0deg, transparent, transparent 28px, rgba(255,255,255,.03) 28px, rgba(255,255,255,.03) 30px),
+    repeating-linear-gradient(90deg, transparent, transparent 28px, rgba(255,255,255,.03) 28px, rgba(255,255,255,.03) 30px);
+}
+.login-box {
+  background: var(--dark2);
+  border: 1px solid var(--dark3);
+  border-radius: 16px;
+  padding: 40px 48px;
+  width: 360px;
+  text-align: center;
+  box-shadow: 0 20px 60px rgba(0,0,0,.4);
+}
+.login-logo {
+  display: inline-flex; align-items: center; gap: 10px;
+  margin-bottom: 28px;
+}
+.login-logo .brick {
+  width: 36px; height: 36px;
+  background: var(--orange);
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px;
+}
+.login-logo span {
+  font-size: 22px; font-weight: 800; color: #fff;
+  letter-spacing: .5px;
+}
+.login-box h2 {
+  color: rgba(255,255,255,.6);
+  font-size: 13px; font-weight: 500;
+  margin-bottom: 24px; letter-spacing: .5px; text-transform: uppercase;
+}
+.login-box input {
+  width: 100%; padding: 12px 16px;
+  background: rgba(255,255,255,.07);
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: 8px; color: #fff;
+  font-size: 15px; margin-bottom: 12px;
+  outline: none; transition: border-color .2s;
+}
+.login-box input:focus { border-color: var(--orange); }
+.login-box input::placeholder { color: rgba(255,255,255,.3); }
+.login-btn {
+  width: 100%; padding: 12px;
+  background: var(--orange); color: #fff;
+  border-radius: 8px; font-size: 15px; font-weight: 700;
+  letter-spacing: .3px; transition: background .2s;
+}
+.login-btn:hover { background: var(--orange-dark); }
+.login-error {
+  color: #ff6b6b; font-size: 12px; margin-top: 8px; display: none;
+}
+
+/* ── Header ───────────────────────────────────────────────────── */
+header {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  height: var(--header-h);
+  background: var(--dark);
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 20px;
+  box-shadow: 0 2px 12px rgba(0,0,0,.3);
+}
+.hdr-logo {
+  display: flex; align-items: center; gap: 10px;
+}
+.hdr-brick {
+  width: 28px; height: 28px; background: var(--orange);
+  border-radius: 6px; display: flex; align-items: center; justify-content: center;
+  font-size: 14px;
+}
+.hdr-logo .brand {
+  font-size: 16px; font-weight: 800; color: #fff; letter-spacing: .5px;
+}
+.hdr-logo .brand span { color: var(--orange); }
+.hdr-meta {
+  font-size: 12px; color: rgba(255,255,255,.45);
+  display: flex; align-items: center; gap: 16px;
+}
+.hdr-meta strong { color: rgba(255,255,255,.8); font-weight: 600; }
+.hdr-sector {
+  background: rgba(232,93,26,.15); color: var(--orange);
+  border: 1px solid rgba(232,93,26,.3);
+  padding: 3px 10px; border-radius: 20px;
+  font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .5px;
+}
+
+/* ── Layout ───────────────────────────────────────────────────── */
+#app { display: none; }
+.layout {
+  display: flex;
+  margin-top: var(--header-h);
+  min-height: calc(100vh - var(--header-h));
+}
+
+/* ── Sidebar ──────────────────────────────────────────────────── */
+aside {
+  width: var(--sidebar-w);
+  min-width: var(--sidebar-w);
+  background: #fff;
+  border-right: 1px solid var(--border);
+  padding: 16px 12px;
+  height: calc(100vh - var(--header-h));
+  overflow-y: auto;
+  position: sticky;
+  top: var(--header-h);
+}
+aside::-webkit-scrollbar { width: 4px; }
+aside::-webkit-scrollbar-thumb { background: var(--bg3); border-radius: 2px; }
+
+.search-wrap {
+  position: relative; margin-bottom: 16px;
+}
+.search-wrap input {
+  width: 100%; padding: 9px 12px 9px 34px;
+  border: 1px solid var(--border); border-radius: var(--radius);
+  background: var(--bg); color: var(--txt); font-size: 13px;
+  outline: none; transition: border-color .2s;
+}
+.search-wrap input:focus { border-color: var(--orange); }
+.search-wrap::before {
+  content: '🔍'; position: absolute; left: 10px; top: 50%;
+  transform: translateY(-50%); font-size: 13px; pointer-events: none;
+}
+
+.filter-section { margin-bottom: 18px; }
+.filter-section h4 {
+  font-size: 10px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .8px; color: var(--txt3); margin-bottom: 8px;
+  padding: 0 4px;
+}
+
+.filter-pills { display: flex; flex-wrap: wrap; gap: 5px; }
+.pill {
+  padding: 4px 10px; border-radius: 20px;
+  font-size: 12px; font-weight: 500; cursor: pointer;
+  border: 1px solid var(--border); background: var(--bg);
+  color: var(--txt2); transition: all .15s;
+  white-space: nowrap;
+}
+.pill:hover { border-color: var(--orange); color: var(--orange); }
+.pill.active {
+  background: var(--orange); border-color: var(--orange);
+  color: #fff; font-weight: 600;
+}
+
+/* Couleurs spécifiques par section */
+.pill.cat.active { background: var(--purple); border-color: var(--purple); }
+.pill.loc.active { background: var(--dark); border-color: var(--dark); }
+.pill.src.active { background: var(--green); border-color: var(--green); }
+.pill.crm.active { background: var(--orange); border-color: var(--orange); }
+
+.filter-sep {
+  height: 1px; background: var(--border); margin: 12px 0;
+}
+
+/* ── Active chips ─────────────────────────────────────────────── */
+#chips-bar {
+  display: flex; flex-wrap: wrap; gap: 6px;
+  padding: 10px 20px; background: var(--bg2);
+  border-bottom: 1px solid var(--border); min-height: 0;
+}
+#chips-bar:empty { display: none; }
+.chip {
+  display: flex; align-items: center; gap: 5px;
+  padding: 4px 10px; border-radius: 20px;
+  background: var(--orange); color: #fff;
+  font-size: 12px; font-weight: 600;
+}
+.chip button {
+  color: rgba(255,255,255,.8); font-size: 14px;
+  line-height: 1; padding: 0 2px;
+}
+.chip button:hover { color: #fff; }
+
+/* ── Main content ─────────────────────────────────────────────── */
+main {
+  flex: 1; padding: 20px;
+  max-width: calc(100vw - var(--sidebar-w));
+}
+.main-header {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 16px;
+}
+.results-count {
+  font-size: 13px; color: var(--txt2);
+}
+.results-count strong { color: var(--txt); }
+
+.sort-select {
+  padding: 6px 10px; border: 1px solid var(--border);
+  border-radius: 8px; background: #fff; font-size: 12px;
+  color: var(--txt); cursor: pointer; outline: none;
+}
+
+/* ── Jobs grid ────────────────────────────────────────────────── */
+#jobs-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 12px;
+}
+
+/* ── Job card ─────────────────────────────────────────────────── */
+.job-card {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px;
+  display: flex; gap: 12px;
+  transition: box-shadow .15s, border-color .15s;
+  position: relative;
+  cursor: pointer;
+}
+.job-card:hover {
+  box-shadow: var(--shadow-lg);
+  border-color: var(--orange);
+}
+.job-card.saved { border-color: var(--orange); background: #FFFBF9; }
+.job-card.is-recruiter { border-left: 3px solid var(--yellow); }
+.job-card.is-client { border-left: 3px solid var(--green); }
+
+/* Logo entreprise */
+.co-logo {
+  width: 40px; height: 40px; border-radius: 8px;
+  background: var(--bg2); border: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; font-weight: 700; color: var(--purple);
+  flex-shrink: 0; text-transform: uppercase; overflow: hidden;
+}
+
+/* Corps de la carte */
+.jbody { flex: 1; min-width: 0; }
+.jtop { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+.jtitle {
+  font-size: 13px; font-weight: 700; color: var(--txt);
+  line-height: 1.3; flex: 1;
+}
+.job-card:hover .jtitle { color: var(--orange); }
+
+.jright { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex-shrink: 0; }
+.jdate { font-size: 11px; color: var(--txt3); }
+.save-btn {
+  font-size: 16px; color: var(--txt3); padding: 0;
+  transition: color .15s, transform .15s;
+}
+.save-btn:hover, .save-btn.on { color: var(--orange); transform: scale(1.2); }
+
+.jco {
+  font-size: 12px; font-weight: 600; color: var(--txt2);
+  margin: 4px 0 6px; white-space: nowrap; overflow: hidden;
+  text-overflow: ellipsis;
+}
+.jmeta { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+
+/* Badges */
+.badge {
+  padding: 2px 7px; border-radius: 12px; font-size: 11px; font-weight: 600;
+  white-space: nowrap;
+}
+.badge-loc { background: var(--bg2); color: var(--txt2); }
+.badge-cat { background: var(--purple-bg); color: var(--purple); }
+.badge-size { background: var(--bg2); color: var(--txt3); }
+.badge-src  { font-size: 10px; }
+
+/* Source badges */
+.src-ft    { background: #E6F0FB; color: #1D5FA8; }
+.src-apec  { background: var(--green-bg); color: var(--green); }
+.src-wttj  { background: #E6FAF1; color: #04A769; }
+.src-hw    { background: #FEF0E6; color: #D65F1A; }
+.src-linrec{ background: var(--purple-bg); color: var(--purple); }
+
+/* CRM indicators */
+.crm-indicators { display: flex; gap: 4px; align-items: center; }
+.crm-dot {
+  width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+}
+.crm-dot.tc       { background: var(--green); }
+.crm-dot.open-job { background: var(--orange); }
+.crm-dot.prospect { background: var(--yellow); }
+.crm-link {
+  font-size: 10px; color: var(--txt3); text-decoration: none;
+  padding: 1px 5px; border: 1px solid var(--border); border-radius: 4px;
+  transition: color .15s, border-color .15s;
+}
+.crm-link:hover { color: var(--orange); border-color: var(--orange); }
+.consultant-badge {
+  font-size: 10px; background: var(--dark); color: #fff;
+  padding: 1px 6px; border-radius: 4px; font-weight: 600;
+}
+
+/* ── No results ───────────────────────────────────────────────── */
+#no-results {
+  display: none; text-align: center; padding: 60px 20px; color: var(--txt2);
+}
+#no-results h3 { font-size: 18px; margin-bottom: 8px; }
+#no-results p { font-size: 14px; }
+
+/* ── Saved toggle ─────────────────────────────────────────────── */
+.saved-toggle {
+  display: flex; align-items: center; gap: 6px;
+  padding: 6px 10px; border: 1px solid var(--border);
+  border-radius: 8px; background: #fff; font-size: 12px;
+  color: var(--txt2); cursor: pointer; transition: all .15s;
+}
+.saved-toggle:hover, .saved-toggle.active {
+  border-color: var(--orange); color: var(--orange);
+}
+
+/* ── Scrollbar ────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-thumb { background: var(--bg3); border-radius: 3px; }
+
+/* ── Responsive ───────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  aside { display: none; }
+  main { max-width: 100vw; }
+  #jobs-list { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<!-- ══════════════ LOGIN ══════════════ -->
+<div id="login-overlay">
+  <div class="login-box">
+    <div class="login-logo">
+      <div class="brick">🧱</div>
+      <span>BRIKS</span>
+    </div>
+    <h2>JobRadar — Accès privé</h2>
+    <input type="password" id="pwd-input" placeholder="Mot de passe"
+           onkeydown="if(event.key==='Enter')tryLogin()">
+    <button class="login-btn" onclick="tryLogin()">Accéder</button>
+    <div class="login-error" id="login-error">Mot de passe incorrect</div>
+  </div>
+</div>
+
+<!-- ══════════════ APP ══════════════ -->
+<div id="app">
+
+  <!-- Header -->
+  <header>
+    <div class="hdr-logo">
+      <div class="hdr-brick">🧱</div>
+      <div class="brand">JOB<span>RADAR</span> &nbsp;|&nbsp; BRIKS</div>
+    </div>
+    <div class="hdr-meta">
+      <div class="hdr-sector">Immobilier · Construction · BTP</div>
+      <div>Mis à jour : <strong id="meta-date">—</strong></div>
+      <div><strong id="meta-total">0</strong> offres</div>
+    </div>
+  </header>
+
+  <div class="layout">
+
+    <!-- ── Sidebar ── -->
+    <aside>
+
+      <!-- Recherche texte -->
+      <div class="search-wrap">
+        <input type="text" id="search-input" placeholder="Rechercher un poste, entreprise…"
+               oninput="applyFilters()">
+      </div>
+
+      <!-- Catégories -->
+      <div class="filter-section">
+        <h4>Catégorie</h4>
+        <div class="filter-pills" id="cat-pills">
+          <div class="pill cat" onclick="toggleFilter('cat','Promotion Immobilière',this)">Promotion Immo</div>
+          <div class="pill cat" onclick="toggleFilter('cat','Transaction / Vente',this)">Transaction / Vente</div>
+          <div class="pill cat" onclick="toggleFilter('cat','Asset & Property Management',this)">Asset & Property Mgt</div>
+          <div class="pill cat" onclick="toggleFilter('cat','Expertise / Évaluation',this)">Expertise / Éval.</div>
+          <div class="pill cat" onclick="toggleFilter('cat','Architecture & Urbanisme',this)">Architecture</div>
+          <div class="pill cat" onclick="toggleFilter('cat','Maîtrise d\'Œuvre',this)">MOE / MOA</div>
+          <div class="pill cat" onclick="toggleFilter('cat','Bureau d\'Études / Ingénierie',this)">Bureau d'Études</div>
+          <div class="pill cat" onclick="toggleFilter('cat','Conduite de Travaux',this)">Conduite Travaux</div>
+          <div class="pill cat" onclick="toggleFilter('cat','Commercial / Foncier',this)">Commercial / Foncier</div>
+          <div class="pill cat" onclick="toggleFilter('cat','Juridique & Finance Immo',this)">Juridique & Finance</div>
+          <div class="pill cat" onclick="toggleFilter('cat','Support & Admin',this)">Support & Admin</div>
+        </div>
+      </div>
+
+      <div class="filter-sep"></div>
+
+      <!-- Localisation -->
+      <div class="filter-section">
+        <h4>Localisation</h4>
+        <div class="filter-pills">
+          <div class="pill loc" onclick="toggleFilter('loc','Paris',this)">Paris</div>
+          <div class="pill loc" onclick="toggleFilter('loc','Île-de-France',this)">Île-de-France</div>
+          <div class="pill loc" onclick="toggleFilter('loc','Lyon',this)">Lyon</div>
+          <div class="pill loc" onclick="toggleFilter('loc','Marseille',this)">Marseille</div>
+          <div class="pill loc" onclick="toggleFilter('loc','Bordeaux',this)">Bordeaux</div>
+          <div class="pill loc" onclick="toggleFilter('loc','Toulouse',this)">Toulouse</div>
+          <div class="pill loc" onclick="toggleFilter('loc','Nantes',this)">Nantes</div>
+          <div class="pill loc" onclick="toggleFilter('loc','Lille',this)">Lille</div>
+          <div class="pill loc" onclick="toggleFilter('loc','Télétravail',this)">Télétravail</div>
+        </div>
+      </div>
+
+      <div class="filter-sep"></div>
+
+      <!-- Sources -->
+      <div class="filter-section">
+        <h4>Source</h4>
+        <div class="filter-pills">
+          <div class="pill src" onclick="toggleFilter('src','France Travail',this)">France Travail</div>
+          <div class="pill src" onclick="toggleFilter('src','APEC',this)">APEC</div>
+          <div class="pill src" onclick="toggleFilter('src','Welcome to the Jungle',this)">WTTJ</div>
+          <div class="pill src" onclick="toggleFilter('src','HelloWork',this)">HelloWork</div>
+          <div class="pill src" onclick="toggleFilter('src','L\'Industrie Recrute',this)">L'Industrie Recrute</div>
+        </div>
+      </div>
+
+      <div class="filter-sep"></div>
+
+      <!-- Ancienneté -->
+      <div class="filter-section">
+        <h4>Publiée depuis</h4>
+        <div class="filter-pills">
+          <div class="pill" onclick="toggleFilter('age',3,this)">3 jours</div>
+          <div class="pill" onclick="toggleFilter('age',7,this)">7 jours</div>
+          <div class="pill" onclick="toggleFilter('age',14,this)">14 jours</div>
+          <div class="pill" onclick="toggleFilter('age',30,this)">30 jours</div>
+          <div class="pill" onclick="toggleFilter('age',60,this)">60 jours</div>
+        </div>
+      </div>
+
+      <div class="filter-sep"></div>
+
+      <!-- Taille entreprise -->
+      <div class="filter-section">
+        <h4>Taille entreprise</h4>
+        <div class="filter-pills">
+          <div class="pill" onclick="toggleFilter('size','≤10',this)">≤10</div>
+          <div class="pill" onclick="toggleFilter('size','11–50',this)">11–50</div>
+          <div class="pill" onclick="toggleFilter('size','51–200',this)">51–200</div>
+          <div class="pill" onclick="toggleFilter('size','201–1k',this)">201–1k</div>
+          <div class="pill" onclick="toggleFilter('size','1k–5k',this)">1k–5k</div>
+          <div class="pill" onclick="toggleFilter('size','5k+',this)">5k+</div>
+        </div>
+      </div>
+
+      <div class="filter-sep"></div>
+
+      <!-- CRM -->
+      <div class="filter-section">
+        <h4>CRM RecruitCRM</h4>
+        <div class="filter-pills">
+          <div class="pill crm" onclick="toggleFilter('crm','tc',this)">T&Cs signés</div>
+          <div class="pill crm" onclick="toggleFilter('crm','open',this)">Job ouvert</div>
+          <div class="pill crm" onclick="toggleFilter('crm','client',this)">Client actif</div>
+          <div class="pill crm" onclick="toggleFilter('crm','no-crm',this)">Hors CRM</div>
+        </div>
+      </div>
+
+      <div class="filter-sep"></div>
+
+      <!-- Cabinets -->
+      <div class="filter-section">
+        <h4>Type</h4>
+        <div class="filter-pills">
+          <div class="pill" onclick="toggleFilter('recruiter','hide',this)">Masquer cabinets RH</div>
+          <div class="pill" onclick="toggleFilter('recruiter','only',this)">Cabinets uniquement</div>
+        </div>
+      </div>
+
+    </aside>
+
+    <!-- ── Main ── -->
+    <div style="flex:1; display:flex; flex-direction:column; min-width:0;">
+
+      <!-- Chips des filtres actifs -->
+      <div id="chips-bar"></div>
+
+      <main>
+        <div class="main-header">
+          <div class="results-count">
+            <strong id="count-display">0</strong> offres affichées
+          </div>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <button class="saved-toggle" id="saved-toggle" onclick="toggleSavedOnly()">
+              ♥ Favoris (<span id="saved-count">0</span>)
+            </button>
+            <select class="sort-select" id="sort-select" onchange="applyFilters()">
+              <option value="date">Tri : Plus récent</option>
+              <option value="company">Tri : Entreprise A→Z</option>
+              <option value="crm">Tri : T&Cs d'abord</option>
+            </select>
+          </div>
+        </div>
+
+        <div id="jobs-list"></div>
+        <div id="no-results">
+          <h3>🏗️ Aucune offre trouvée</h3>
+          <p>Essayez d'élargir vos filtres.</p>
+        </div>
+      </main>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════════════
+// AUTH
+// ══════════════════════════════════════════════════════════════
+var _ak = 'briks_jr_auth_v1';
+var _ex = 'QnJpa3M5OTkh'; // btoa("Briks999!")
+
+function _initAuth() {
+  var ov = document.getElementById('login-overlay');
+  if (localStorage.getItem(_ak) === _ex) {
+    ov.style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    initApp();
+    return;
+  }
+  ov.style.display = 'flex';
+}
+
+function tryLogin() {
+  var v = document.getElementById('pwd-input').value;
+  var err = document.getElementById('login-error');
+  if (btoa(v) === _ex) {
+    localStorage.setItem(_ak, _ex);
+    document.getElementById('login-overlay').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    initApp();
+  } else {
+    err.style.display = 'block';
+    document.getElementById('pwd-input').classList.add('shake');
+    setTimeout(() => {
+      err.style.display = 'none';
+      document.getElementById('pwd-input').classList.remove('shake');
+    }, 2500);
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+// DATA (injecté par fetch.py)
+// ══════════════════════════════════════════════════════════════
+var JOBS = [{"id":"ft_209CSYZ","title":"Chef(fe) de chantier Plomberie / Chauffage / CVC H/F (H/F)","company":"MACIEJOWSKI SERVICES SARL","location":"Limoges","url":"https://candidat.francetravail.fr/offres/recherche/detail/209CSYZ","source":"France Travail","date":"2026-06-02","days_old":0,"category":"Autre","size":"","is_recruiter":false,"description":"Vous êtes plombier chauffagiste confirmé, autonome, et avez envie de prendre davantage de responsabilités ?\nNous recherchons un(e) Chef(fe) de chantier Plomberie / Chauffage / CVC pour piloter et réaliser des chantiers en rénovation et en installation.\n\nChez Maciejowski Services, vous rejoignez une "},{"id":"ft_209DBDD","title":"Conducteur de Travaux second œuvre en CDI (h/f)","company":"IZIWORK","location":"Niort","url":"https://candidat.francetravail.fr/offres/recherche/detail/209DBDD","source":"France Travail","date":"2026-06-02","days_old":0,"category":"Conduite de Travaux","size":"","is_recruiter":false,"description":"\nÀ propos de la mission\n\nEn tant que conducteur de travaux second oeuvre , vous assurez la coordination et la supervision de chantiers. \n- Planifier  les tâches, gérer les équipes et la conformité des travaux. \n- Définir les plannings.\n- Définir les moyens nécessaires à l'exécution du chantier (maté"},{"id":"ft_3320008","title":"Conducteur de Travaux Aménagements Extérieurs Femme/Homme (H/F)","company":"","location":"Cergy","url":"https://candidat.francetravail.fr/offres/recherche/detail/3320008","source":"France Travail","date":"2026-06-02","days_old":0,"category":"Conduite de Travaux","size":"","is_recruiter":false,"description":"Candidate First recrute pour l'un de ses clients spécialisé en aménagement extérieur un Conducteur de Travaux Aménagements Extérieurs Femme/Homme localisé à Cergy (95). Ce poste s'adresse à un profil confirmé, doté de compétences solides en biologie végétale, en encadrement de chantiers, et témoigna"},{"id":"ft_3280399","title":"Chef de Chantier H/F","company":"ORTEC INDUSTRIE MULHOUSE","location":"Thann","url":"https://candidat.francetravail.fr/offres/recherche/detail/3280399","source":"France Travail","date":"2026-06-02","days_old":0,"category":"Conduite de Travaux","size":"","is_recruiter":false,"description":"RESPONSABILITÉS : ORTEC INDUSTRIE Mulhouse, l'une des agences du Groupe ORTEC, est spécialisée dans la construction d'unités industrielles, et plus particulièrement dans les travaux de tuyauterie, chaudronnerie, maintenance industrielle et arrêts d'unités. 👉 Nous recrutons notre futur Chef de chanti"},{"id":"ft_3308952","title":"Conducteur de travaux canalisation (H/F)","company":"","location":"Bordeaux","url":"https://candidat.francetravail.fr/offres/recherche/detail/3308952","source":"France Travail","date":"2026-06-02","days_old":0,"category":"Architecture & Urbanisme","size":"","is_recruiter":false,"description":"En bref : Bordeaux - CDI - Conducteur de travaux en canalisation (H/F) - Groupe spécialisé dans les Travaux Publics Nous recrutons pour un groupe de référence dans le secteur des Travaux Publics, fortement engagé dans l'amélioration des infrastructures en France. Leader dans l’aménagement urbain, no"},{"id":"ft_209CVZS","title":"Négociateur immobilier (H/F)","company":"","location":"Le Soler","url":"https://candidat.francetravail.fr/offres/recherche/detail/209CVZS","source":"France Travail","date":"2026-06-02","days_old":0,"category":"Transaction / Vente","size":"","is_recruiter":false,"description":"Type de contrat : Statut Indépendant (Agent Commercial) ou Salarié (selon profil)\nProfils : Tous les profils sont étudiés (débutants acceptés, formation assurée)\n\nAu sein de notre agence, vous aurez en charge de trouver, suivre et vendre un stock d'affaires (maisons, appartements) dans le cadre de t"},{"id":"ft_3243370","title":"Conducteur de travaux GO F/H - Cadres de chantier (H/F)","company":"Hays France","location":"Bouc-Bel-Air","url":"https://candidat.francetravail.fr/offres/recherche/detail/3243370","source":"France Travail","date":"2026-06-01","days_old":1,"category":"Conduite de Travaux","size":"","is_recruiter":true,"description":"Descriptif du poste:\n\nRattaché au Directeur de travaux et en tant que Conducteur de Travaux, vos responsabilités sont les suivantes :\n- Définir les besoins du chantier : moyens humains, matériels (gestion des commandes),\n- Effectuer une étude d'exécution en termes de budget : consultation, comparais"},{"id":"ft_3269289","title":"Conducteur de Travaux Menuiserie H/F","company":"Crit","location":"Belfort","url":"https://candidat.francetravail.fr/offres/recherche/detail/3269289","source":"France Travail","date":"2026-06-01","days_old":1,"category":"Conduite de Travaux","size":"","is_recruiter":false,"description":"POSTE : Conducteur de Travaux Menuiserie H/F\nDESCRIPTION : Dans le cadre du développement de son activité, nous recherchons pour notre client, spécialisé dans le secteur de la menuiserie, un Conducteur de Travaux Menuiserie (H/F) à Belfort (90000) en CDI. L\n \nLe Conducteur de Travaux Menuiserie sera"},{"id":"ft_3236046","title":"Juriste  - Droit Immobilier & Construction (H/F)","company":"","location":"Luxembourg","url":"https://candidat.francetravail.fr/offres/recherche/detail/3236046","source":"France Travail","date":"2026-05-31","days_old":2,"category":"Juridique & Finance Immo","size":"","is_recruiter":false,"description":"Rejoignez une institution semi-publique de premier plan, pilier du secteur immobilier luxembourgeois depuis plus d'un siècle. Entreprise à taille humaine en pleine croissance (passant de à collaborateurs), elle offre un environnement de travail moderne et une sécurité d'emploi unique, portée par un "},{"id":"ft_3230389","title":"Conducteur de Travaux Principal Caténaire H/F","company":"","location":"Hauts-De-Seine","url":"https://candidat.francetravail.fr/offres/recherche/detail/3230389","source":"France Travail","date":"2026-05-30","days_old":3,"category":"Conduite de Travaux","size":"","is_recruiter":false,"description":"Votre mission Vous êtes responsable, au sein d'une unité d'exploitation, de l'organisation, du suivi et du bon achèvement du ou des chantiers dont vous avez la charge, dans le respect des règles d'hygiène, sécurité et environnement. Vos principales responsabilités Vous analysez les risques du chanti"},{"id":"ft_3208664","title":"Conducteur de Travaux en Signalisation Ferroviaire F/H (H/F)","company":"Groupe VINCI","location":"Arras","url":"https://candidat.francetravail.fr/offres/recherche/detail/3208664","source":"France Travail","date":"2026-05-30","days_old":3,"category":"Conduite de Travaux","size":"","is_recruiter":false,"description":"Situé à Arras, la société Axians Rail (CA : 30M€, 172 collaborateurs), du Pôle VINCI Energies Renewables & Mobility, accompagnent les gestionnaires d'infrastructures ferroviaires dans le développement de leurs systèmes de signalisation, leurs réseaux de télécommunications et leurs équipements en gar"},{"id":"ft_3178317","title":"Chef de Chantier Electricité Tertiaire (H/F)","company":"","location":"Ménétrol","url":"https://candidat.francetravail.fr/offres/recherche/detail/3178317","source":"France Travail","date":"2026-05-29","days_old":4,"category":"Conduite de Travaux","size":"","is_recruiter":false,"description":"KALIXENS accompagne des TPEs, PMEs et grands groupes via ses activités de prestations de recrutement. Branche d'une société régionale évoluant dans le secteur des ressources humaines KALIXENS recrute pour ses clients et sur plusieurs régions les futurs talents, experts et cadres. Un recrutement CDD-"},{"id":"ft_3178234","title":"Conducteur de travaux industriels (H/F)","company":"","location":"Aix-En-Provence","url":"https://candidat.francetravail.fr/offres/recherche/detail/3178234","source":"France Travail","date":"2026-05-29","days_old":4,"category":"Conduite de Travaux","size":"","is_recruiter":false,"description":"Nous accompagnons les entreprises et les candidats au travers de prestations de Recrutement et Intérim spécialisées sur les fonctions Techniques et Scientifiques liées à l'Industrie. Talents Industrie, cabinet de recrutement spécialisé dans les métiers techniques, vous propose des offres d'emploi da"},{"id":"ft_3180523","title":"Chef de chantier électricité CFO/CFA H/F","company":"","location":"Boulogne-Billancourt","url":"https://candidat.francetravail.fr/offres/recherche/detail/3180523","source":"France Travail","date":"2026-05-29","days_old":4,"category":"Conduite de Travaux","size":"","is_recruiter":false,"description":"Nous recherchons pour l'un de nos client, un Chef de chantier électricité CFO/CFA (H/F) basé à Boulogne Billancourt.En qualité de chef de chantier CFO/CFA, vous occuperez un rôle essentiel dans la supervision, la mise en place et le suivi de projets d'envergure dans les domaines tertiaires et semi-i"},{"id":"ft_3169467","title":"Conducteur de travaux TCE F/H (H/F)","company":"Eiffage","location":"Rungis","url":"https://candidat.francetravail.fr/offres/recherche/detail/3169467","source":"France Travail","date":"2026-05-29","days_old":4,"category":"Conduite de Travaux","size":"","is_recruiter":false,"description":"Sous la marque TERCEO, l'entité d'Eiffage Énergie Systèmes IDF recrute pour son agence de Rungis (94) son Conducteur de travaux en rénovation énergétique/TCE. En collaboration avec le Responsable d'affaires, vous coordonnez la réalisation des travaux de rénovation énergétique des bâtiments tertiaire"},{"id":"ft_3179155","title":"Conducteur de travaux CVC grand projet (H/F)","company":"","location":"Toulouse","url":"https://candidat.francetravail.fr/offres/recherche/detail/3179155","source":"France Travail","date":"2026-05-29","days_old":4,"category":"Conduite de Travaux","size":"","is_recruiter":false,"description":"Nous recherchons un Conducteur de travaux CVC grand projet (H/F) sur Toulouse, France. Vous assurerez la gestion et le suivi de projets d'envergure dans le domaine du chauffage, de la ventilation et de la climatisation (CVC), en garantissant le respect des délais, de la qualité et du budget. Ce post"},{"id":"ft_3166078","title":"chef de chantier TCE  (H/F)","company":"","location":"France","url":"https://candidat.francetravail.fr/offres/recherche/detail/3166078","source":"France Travail","date":"2026-05-29","days_old":4,"category":"Conduite de Travaux","size":"","is_recruiter":false,"description":"Nous recherchons un Chef de Chantier TCE (H/F) sur Paris. Vous assurerez le suivi de nos projets dans le domaine du bâtiment tout corps d'état, en veillant à la rigueur et à la qualité du travail effectué, avec une belle possibilité d'évolution au sein de notre entreprise.Vos futures missions :- Pla"},{"id":"ft_3167781","title":"Chef de chantier CFA/CFO (H/F)","company":"","location":"Figeac","url":"https://candidat.francetravail.fr/offres/recherche/detail/3167781","source":"France Travail","date":"2026-05-29","days_old":4,"category":"Conduite de Travaux","size":"","is_recruiter":false,"description":"Nous recherchons un Chef de chantier CFA/CFO (H/F) sur  Figeac, France. Tu auras la responsabilité de superviser et de coordonner les travaux électriques sur les chantiers de Courants Faibles et Courants Forts, en te conformant aux plans et aux réglementations en vigueur. Ce poste est ta chance de j"},{"id":"ft_3162183","title":"Conducteur de Travaux Menuiserie H/F","company":"Actual Talent","location":"Saint-Dizier","url":"https://candidat.francetravail.fr/offres/recherche/detail/3162183","source":"France Travail","date":"2026-05-29","days_old":4,"category":"Conduite de Travaux","size":"","is_recruiter":false,"description":"POSTE : Conducteur de Travaux Menuiserie H/F\nDESCRIPTION : Présentation :\nNotre client, PME spécialisée dans la construction et la rénovation de maisons (250 salariés, 18 sociétés), intervenant dans le tout corps d'état, recherche un(e) Coordinateur de Travaux spécialisé en Menuiserie H/F en CDI.\n \n"},{"id":"ft_3161826","title":"Négociateur transaction H/F","company":"","location":"Saintes","url":"https://candidat.francetravail.fr/offres/recherche/detail/3161826","source":"France Travail","date":"2026-05-29","days_old":4,"category":"Autre","size":"","is_recruiter":false,"description":"Au sein de votre agence, vous avez la responsabilité de l'entrée de nouveaux mandats par une démarche de prospection.L'une de nos valeurs étant la confiance, une fois intégré au sein de votre équipe, vous travaillerez en binôme avec un Gestionnaire de Copropriété qui vous confiera un portefeuille de"},{"id":"ft_3169951","title":"NEGOCIATEUR TRANSACTION EN CDI H/F","company":"Clint & Associes","location":"Paris 15E Arrondissement","url":"https://candidat.francetravail.fr/offres/recherche/detail/3169951","source":"France Travail","date":"2026-05-29","days_old":4,"category":"Support & Admin","size":"","is_recruiter":false,"description":"CLINT & ASSOCIÉS, cabinet de recrutement spécialisé dans les métiers de l'immobilier depuis 2019, recherche pour l'un de ses clients, un acteur reconnu de l'administration de biens, un(e) NÉGOCIATEUR TRANSACTION CONFIRME / SENIOR H/F dans le cadre d'un CDI, basé à Paris 15ème.\n\nVous développez l'act"},{"id":"ft_208YBZV","title":"Architecte urbaniste - Chef de projet expérimenté (transports) (H/F)","company":"LABA TERRITOIRES","location":"Paris 10","url":"https://candidat.francetravail.fr/offres/recherche/detail/208YBZV","source":"France Travail","date":"2026-05-29","days_old":4,"category":"Architecture & Urbanisme","size":"","is_recruiter":false,"description":"LABA, agence d'architecture pluridisciplinaire conçoit des projets de transport et de mobilité, d'urbanisme et d'aménagement d'espaces publics. Elle réalise par ailleurs des bâtiments de logements, bureaux ou autres équipements publics.\nDans le cadre de son développement, l'agence renforce son équip"},{"id":"ft_208WZDB","title":"Chef de chantier TCE (H/F)","company":"KERN SYNERGIE","location":"St Herblain","url":"https://candidat.francetravail.fr/offres/recherche/detail/208WZDB","source":"France Travail","date":"2026-05-28","days_old":5,"category":"Conduite de Travaux","size":"","is_recruiter":true,"description":"À propos de KERN PAYS DE LA LOIRE : \n\nIssu du regroupement des entités SRB, EDIGO, SYMTRIA et SIRIUS, le Groupe KERN fédère aujourd'hui l'ensemble de ses expertises sous une identité commune et cohérente.\n\nActeur établi dans le secteur du BTP, le Groupe KERN structure son développement autour de qua"},{"id":"ft_3139107","title":"Chef de chantier travaux CVC (tertiaire) H/F","company":"","location":"Saintes","url":"https://candidat.francetravail.fr/offres/recherche/detail/3139107","source":"France Travail","date":"2026-05-28","days_old":5,"category":"Conduite de Travaux","size":"","is_recruiter":false,"description":"Notre client est une entreprise reconnue qui cultive un savoir-faire multitechnique en travaux et en services dans les métiers du génie électrique et climatique. L'entreprise intervient uniquement sur des projets tertiaires et industriel en réhabilitation et neuf. Dans le cadre du développement de l"},{"id":"ft_3137832","title":"Chef de Chantier VRD H/F","company":"asap.work","location":"Saint-Avold","url":"https://candidat.francetravail.fr/offres/recherche/detail/3137832","source":"France Travail","date":"2026-05-28","days_old":5,"category":"Bureau d'Études / Ingénierie","size":"","is_recruiter":false,"description":"POSTE : Chef de Chantier VRD H/F\nDESCRIPTION : Nous recherchons un Chef de chantier VRD (H/F) sur 57500 Saint-Avold, France. Sous la responsabilité du Conducteur de travaux, tu seras chargé de la préparation et de la gestion de l'exploitation des chantiers VRD en garantissant le respect des délais, "},{"id":"ft_3146872","title":"Chef De Chantier Cfo/cfa - H/f","company":"","location":"Francescas","url":"https://candidat.francetravail.fr/offres/recherche/detail/3146872","source":"France Travail","date":"2026-05-28","days_old":5,"category":"Conduite de Travaux","size":"","is_recruiter":false,"description":"LCI ELEC INDUSTRIE, cabinet de recrutement spécialisé en électricité, recherche pour un de ces client, un(e) \nCHEF DE CHANTIER ELECTRICITE TERTIAIRE H/F\nVous êtes directement rattaché à un responsable d'affaires ou à un conducteur de travaux du service CFO/CFA.\nVous êtes en charge de l'organisation "},{"id":"ft_3127486","title":"Conducteur de Travaux Eclairage Public - Idf Ouest 95 H/F","company":"Derichebourg Eclairage Public","location":"Argenteuil","url":"https://candidat.francetravail.fr/offres/recherche/detail/3127486","source":"France Travail","date":"2026-05-28","days_old":5,"category":"Conduite de Travaux","size":"","is_recruiter":false,"description":"POSTE : Conducteur de Travaux Eclairage Public - Idf Ouest 95 H/F\nDESCRIPTION : Derichebourg Energie EP, expert en maîtrise de l'énergie, travaux et maintenance des réseaux d'éclairage et de signalisation routière, propose une offre complète de prestations dans les domaines de la conception, exploit"},{"id":"ft_3128855","title":"Conducteur de Travaux en Menuiserie Bois H/F","company":"EMO France","location":"Nice","url":"https://candidat.francetravail.fr/offres/recherche/detail/3128855","source":"France Travail","date":"2026-05-28","days_old":5,"category":"Conduite de Travaux","size":"","is_recruiter":false,"description":"POSTE : Conducteur de Travaux en Menuiserie Bois H/F\nDESCRIPTION : Le Groupe DLSI et son agence EMO DLSI recrutent pour un de leurs clients, un :Conducteur de travaux en menuiserie bois  (h/f)Notre client, spécialisé dans la menuiserie bois intérieure, l'agencement et le mobilier bois sur mesure, in"},{"id":"ft_3122401","title":"Conducteur de Travaux Menuiserie Extérieure H/F","company":"EMO France","location":"Vénissieux","url":"https://candidat.francetravail.fr/offres/recherche/detail/3122401","source":"France Travail","date":"2026-05-28","days_old":5,"category":"Conduite de Travaux","size":"","is_recruiter":false,"description":"POSTE : Conducteur de Travaux Menuiserie Extérieure H/F\nDESCRIPTION : Le Groupe DLSI et son agence EMO DLSI recrutent pour un de leurs clients, un :Conducteur de travaux menuiserie extérieure (h/f)Notre client menuisier (PVC, Aluminium) intervenant sur des projets en marchés publics et privés : loge"},{"id":"ft_208WHML","title":"Gestionnaire patrimoine locatif (H/F)","company":"DYNACITE OFFICE PUBLIC DE L'HABITAT DE L","location":"Bourg En Bresse","url":"https://candidat.francetravail.fr/offres/recherche/detail/208WHML","source":"France Travail","date":"2026-05-28","days_old":5,"category":"Autre","size":"","is_recruiter":false,"description":"Au sein d'une équipe pluridisciplinaire, vous assurez la gestion d'un patrimoine locatif immobilier en prenant en charge le traitement et le suivi des réclamations des locataires (recueil du dysfonctionnement, diagnostic, commande des interventions, suivi des entreprises et de la réalisation des tra"},{"id":"ft_3150910","title":"Gestionnaire locatif de proximité en immobilier social F/H - NEOTOA","company":"NEOTOA","location":"Rennes","url":"https://candidat.francetravail.fr/offres/recherche/detail/3150910","source":"France Travail","date":"2026-05-28","days_old":5,"category":"Autre","size":"","is_recruiter":false,"description":"Vous avez pour mission de piloter votre activité de l’entrée dans les lieux du locataire à son départ dans le respect de la Réglementation et des process internes. Vous contribuez à la qualité de service aux clients (locataires, partenaires, élus, etc.), à la qualité du cadre de vie des habitants et"},{"id":"ft_208TYFY","title":"Chef de chantier /conducteur de travaux (H/F)","company":"MARTIN TP","location":"Arenthon","url":"https://candidat.francetravail.fr/offres/recherche/detail/208TYFY","source":"France Travail","date":"2026-05-27","days_old":6,"category":"Bureau d'Études / Ingénierie","size":"","is_recruiter":false,"description":"Implantée à Scientrier, SAS Martin TP est une entreprise de travaux publics à taille humaine, reconnue localement depuis 2010.\n\nNous intervenons principalement en terrassement, réseaux, VRD et aménagements extérieurs auprès d'une clientèle privée, professionnelle et publique sur l'ensemble de la Hau"},{"id":"ft_3092015","title":"Conducteur travaux principal / Chef de groupe F/H - Cadres de chantier (H/F)","company":"Eiffage Construction","location":"Saint-Ouen-Sur-Seine","url":"https://candidat.francetravail.fr/offres/recherche/detail/3092015","source":"France Travail","date":"2026-05-27","days_old":6,"category":"Autre","size":"5k+","is_recruiter":false,"description":"Descriptif du poste:\n\n\n\n\nDans le cadre de son développement, l'établissement Eiffage Construction Amélioration de l'Habitat, de la branche Construction, rattaché à la région Ile de France, recrute en CDI :\n\n \n\nConducteur travaux Principal / Chef de groupe - Réhabilitation F/H\n\n\n\n \n\nType de contrat :"},{"id":"ft_3075209","title":"Chef de chantier Tout corps d'état H/F","company":"","location":"Marseille","url":"https://candidat.francetravail.fr/offres/recherche/detail/3075209","source":"France Travail","date":"2026-05-27","days_old":6,"category":"Conduite de Travaux","size":"","is_recruiter":false,"description":"En plein essor, la région STM se distingue par son dynamisme et sa croissance, tant sur le plan commercial que des ressources humaines. Cette dynamique permet à Fauché de briller sur tout le territoire Provence-Alpes-Côte d'Azur grâce à ses 900 collaborateurs.Rejoindre Fauché, ce n'est pas simplemen"},{"id":"ft_3054832","title":"Chef de chantier rénovation H/F","company":"","location":"Digne-Les-Bains","url":"https://candidat.francetravail.fr/offres/recherche/detail/3054832","source":"France Travail","date":"2026-05-27","days_old":6,"category":"Conduite de Travaux","size":"","is_recruiter":false,"description":"Notre client est une PME régionale reconnue dans le domaine de la rénovation de bâtiments et des travaux de façades, implantée en région PACA depuis près de 30 ans.\nAdossée à une structure spécialisée en façade et isolation thermique par l'extérieur, elle intervient sur des opérations variées en réh"},{"id":"ft_3085764","title":"Chef de Chantier VRD (H/F)","company":"","location":"Cébazat","url":"https://candidat.francetravail.fr/offres/recherche/detail/3085764","source":"France Travail","date":"2026-05-27","days_old":6,"category":"Bureau d'Études / Ingénierie","size":"","is_recruiter":false,"description":"KALIXENS accompagne des TPEs, PMEs et grands groupes via ses activités de prestations de recrutement. Branche d'une société régionale évoluant dans le secteur des ressources humaines KALIXENS recrute pour ses clients et sur plusieurs régions les futurs talents, experts et cadres. Un recrutement CDD-"},{"id":"ft_3059476","title":"Chef de chantier Réhabilitation TCE (F/H) (H/F)","company":"","location":"Marseille","url":"https://candidat.francetravail.fr/offres/recherche/detail/3059476","source":"France Travail","date":"2026-05-27","days_old":6,"category":"Conduite de Travaux","size":"","is_recruiter":false,"description":"Notre client est un MAJOR du secteur du Bâtiment, qui intervient notamment dans la construction neuve mais également dans la rénovation lourde et la réhabilitation de parc immobilier. Ils cherchent à ce titre un(e) Chef de chantier en réhabilitation TCE.Rattaché(e) au Conducteur de Travaux, vous ête"},{"id":"ft_3055292","title":"Chef de chantier CFO/CFA H/F","company":"","location":"Vienne","url":"https://candidat.francetravail.fr/offres/recherche/detail/3055292","source":"France Travail","date":"2026-05-27","days_old":6,"category":"Conduite de Travaux","size":"","is_recruiter":false,"description":"Acteur reconnu du secteur du génie électrique, notre client est une entreprise à taille humaine spécialisée dans les installations électriques en environnement tertiaire et industriel. Elle intervient sur des projets d'envergure et accompagne ses clients sur des chantiers techniques à forte valeur a"},{"id":"ft_3078405","title":"Chef de chantier CFO/CFA projets hospitalier H/F","company":"","location":"Marseille","url":"https://candidat.francetravail.fr/offres/recherche/detail/3078405","source":"France Travail","date":"2026-05-27","days_old":6,"category":"Conduite de Travaux","size":"","is_recruiter":false,"description":"Encore et toujours plus ambitieuse notre agence Fauché Aix profite de son dynamisme pour se développer chaque jour un peu plus ! Alliez le charme de la région Aixoise et l'esprit conviviale d'un groupe rayonnant pour marquer un tournant dans votre carrière.Rejoindre Fauché, ce n'est pas simplement r"},{"id":"ft_3058769","title":"Avocat associé Droit de la Construction/Immobilier H/F","company":"","location":"Paris","url":"https://candidat.francetravail.fr/offres/recherche/detail/3058769","source":"France Travail","date":"2026-05-27","days_old":6,"category":"Juridique & Finance Immo","size":"","is_recruiter":false,"description":"Cabinet d'avocat spécialisé dans l' accompagnement complet - juridique, financier, technique - pour des projets complexes recherche un associé !Vous interviendrez principalement en conseil et dans une moindre mesure en contentieux pour le compte d'une clientèle de personnes publiques et d'entreprise"},{"id":"ft_208TKLY","title":"Assistant conducteur de travaux H/F","company":"NGE","location":"Chelles","url":"https://candidat.francetravail.fr/offres/recherche/detail/208TKLY","source":"France Travail","date":"2026-05-26","days_old":7,"category":"Conduite de Travaux","size":"","is_recruiter":false,"description":"TSO CATENAIRES, filiale de TSO et du groupe NGE, réalise la conception, l'installation et la maintenance de systèmes d'alimentation et d'électrification des structures essentielles pour nos réseaux ferroviaires. Nous intervenons sur des projets majeurs en France et à l'international.\n\nEn rejoignant "},{"id":"ft_208TJDS","title":"Assistant Conducteur de travaux (h/f)","company":"ADECCO","location":"Saint-Sauveur","url":"https://candidat.francetravail.fr/offres/recherche/detail/208TJDS","source":"France Travail","date":"2026-05-26","days_old":7,"category":"Conduite de Travaux","size":"","is_recruiter":true,"description":"Nous recherchons pour notre client, entreprise reconnue dans le domaine du bâtiment à Amiens, un Assistant Conducteur de Travaux f/h.\n\nVOS MISSIONS :\n-Vous préparez et organisez des chantiers (planning, moyens humains et matériels).\n-Vous effectuez le suivi de l'exécution des travaux dans le respect"},{"id":"ft_208SLQW","title":"Responsable Atelier & Chantiers (H/F)","company":"","location":"St Maurice La Clouere","url":"https://candidat.francetravail.fr/offres/recherche/detail/208SLQW","source":"France Travail","date":"2026-05-26","days_old":7,"category":"Autre","size":"","is_recruiter":false,"description":"Rejoignez une entreprise de terrain reconnue depuis plus de 30 ans\nDepuis 1991, Souille conçoit, fabrique et pose des ouvrages métalliques sur-mesure pour les particuliers, entreprises et collectivités.\nSpécialisés en métallerie, serrurerie et menuiserie aluminium, nous travaillons avec une équipe à"},{"id":"ft_3041633","title":"Conducteur de Travaux TCE (H/F)","company":"","location":"Paris 1Er Arrondissement","url":"https://candidat.francetravail.fr/offres/recherche/detail/3041633","source":"France Travail","date":"2026-05-26","days_old":7,"category":"Conduite de Travaux","size":"","is_recruiter":false,"description":"Le Cabinet RH - LCRH: Nous sommes un cabinet de recrutement mettant en relation les candidats et entreprises pour une prise de poste en CDI directement avec nos clients. \n\n        - Préparer le chantier avec le chargé d'affaires ou le conducteur de travaux (planning, méthodes, moyens, PPSPS).\n- Orga"},{"id":"ft_208TBLW","title":"Gestionnaire immobilier locatif (H/F)","company":"DYNACITE OFFICE PUBLIC DE L'HABITAT DE L","location":"Valserhône","url":"https://candidat.francetravail.fr/offres/recherche/detail/208TBLW","source":"France Travail","date":"2026-05-26","days_old":7,"category":"Asset & Property Management","size":"","is_recruiter":false,"description":"Ici, votre métier a un impact !\nConstruire, rénover, loger, accompagner. Chez DYNACITE, ces mots prennent tout leur sens : ils changent concrètement la vie de milliers de personnes, chaque jour.\nPremier bailleur social du département de l'Ain, présent sur cinq départements d'Auvergne-Rhône-Alpes, no"},{"id":"ft_3048150","title":"Juriste confirmé.e Droit de la construction et Droit immobilier F/H (H/F)","company":"","location":"Lyon","url":"https://candidat.francetravail.fr/offres/recherche/detail/3048150","source":"France Travail","date":"2026-05-26","days_old":7,"category":"Juridique & Finance Immo","size":"","is_recruiter":false,"description":"La Direction Juridique & Conformité de Framatome est à la recherche d'un.e juriste confirmé.e en Droit de la construction et Droit immobilier, titulaire d'un Master 2 en Droit de la construction/Droit immobilier, spécialisé.e dans le domaine de la construction et justifiant d'un minimum de 7 ans d'e"},{"id":"ft_3044295","title":"Avocat droit immobilier et construction h/f","company":"","location":"Lyon","url":"https://candidat.francetravail.fr/offres/recherche/detail/3044295","source":"France Travail","date":"2026-05-26","days_old":7,"category":"Juridique & Finance Immo","size":"","is_recruiter":false,"description":"Sous la supervision de l'avocat associé, vous aurez pour missions : ·Rédaction de la documentation d'acquisition immobilière, baux commerciaux, location etc.,·Gestion du pré-contentieux et du contentieux en matière de construction,·Conseils et suivi en matière de gestion immobilière (copropriété).Le"},{"id":"ft_208RZHZ","title":"Chef de chantier ( H/F )","company":"SATIS TT NANTES","location":"Bouguenais","url":"https://candidat.francetravail.fr/offres/recherche/detail/208RZHZ","source":"France Travail","date":"2026-05-25","days_old":8,"category":"Conduite de Travaux","size":"","is_recruiter":false,"description":"En tant que Chef de Chantier, vous serez garant du bon déroulement des travaux sur site :\n\n- Organiser, coordonner et suivre les chantiers\n- Encadrer et animer les équipes sur le terrain\n- Répartir les tâches et assurer le suivi de l'avancement des travaux\n- Veiller au respect des délais, de la qual"},{"id":"ft_2995245","title":"Technicien de chantier - Santé Metz H/F","company":"","location":"Vantoux","url":"https://candidat.francetravail.fr/offres/recherche/detail/2995245","source":"France Travail","date":"2026-05-25","days_old":8,"category":"Autre","size":"","is_recruiter":false,"description":"\n            En tant que référent technique sur le terrain, vous prenez en charge vos chantiers de A à Z. Vous intervenez principalement sur des installations de chauffage et de production d'Eau Chaude Sanitaire (ECS).Responsabilités Clés :Gestion de chantier : Lecture de plans, préparation du matér"},{"id":"ft_2974032","title":"CHEF DE CHANTIER/ AIDE CONDUCTEUR DE TRAVAUX  (H/F)","company":"AVANTAGE RH","location":"Cour-Cheverny","url":"https://candidat.francetravail.fr/offres/recherche/detail/2974032","source":"France Travail","date":"2026-05-23","days_old":10,"category":"Conduite de Travaux","size":"","is_recruiter":false,"description":"Chef de Chantier/ Aide Conducteur de Travaux H/F\n\nDans le cadre de son développement, notre client une entreprise spécialisée dans le TP nous consulte en vue de procéder dans les meilleurs délais aux opérations de recherches, d’ un(e) Chef de Chantier/Aide Conducteur de Travaux H/F :\n\nMissions :\nRat"},{"id":"ft_2982106","title":"Conducteur de Travaux Menuiserie Bois et Monuments Historiques H/F","company":"Crit","location":"Semarey","url":"https://candidat.francetravail.fr/offres/recherche/detail/2982106","source":"France Travail","date":"2026-05-23","days_old":10,"category":"Conduite de Travaux","size":"","is_recruiter":false,"description":"POSTE : Conducteur de Travaux Menuiserie Bois et Monuments Historiques H/F\nDESCRIPTION : Dans le cadre du développement de son activité, notre client, spécialisé dans les travaux haut de gamme de rénovation, réhabilitation et menuiserie bois sur bâtiments anciens et Monuments Historiques, recherche "},{"id":"ft_2974841","title":"Négociateur Transaction H/F","company":"Adecco","location":"Fréjus","url":"https://candidat.francetravail.fr/offres/recherche/detail/2974841","source":"France Travail","date":"2026-05-23","days_old":10,"category":"Transaction / Vente","size":"","is_recruiter":true,"description":"POSTE : Négociateur Transaction H/F\nDESCRIPTION : Votre mission\n \nNégociateur Immobilier Transaction (H/F) - Fréjus (83)\n \nL'entreprise\n  \nNotre client, un acteur majeur de l'administration de biens en France, renforce son équipe de Fréjus et recrute un(e) :  \nNégociateur(trice) Transaction Immobili"},{"id":"ft_208RLDJ","title":"Chef de chantier H/F","company":"CRIT","location":"Metz","url":"https://candidat.francetravail.fr/offres/recherche/detail/208RLDJ","source":"France Travail","date":"2026-05-22","days_old":11,"category":"Conduite de Travaux","size":"","is_recruiter":false,"description":"Dans le cadre du développement de son activité, nous recherchons pour notre client, spécialisé dans le secteur du BTP, un Chef de chantier à METZ - 57070 en CDI. Le poste requiert une expérience de 2 à 5 ans et un diplôme de BAC+2. Les horaires sont de 35 heures par semaine avec une rémunération hor"},{"id":"ft_2922354","title":"Chef de chantier façadier - (H/F)","company":"","location":"Saint-Nazaire","url":"https://candidat.francetravail.fr/offres/recherche/detail/2922354","source":"France Travail","date":"2026-05-22","days_old":11,"category":"Conduite de Travaux","size":"","is_recruiter":false,"description":"Notre client recrute pour son agence de  travaux à SAINT NAZAIRE, un :\n\nChef de chantier (H/F) en CDI, ravalement de façade et étanchéité liquide\n\nVous êtes le relais du Conducteur de travaux sur chantier et travaillez réellement en binôme avec celui-ci, vous êtes responsable de votre équipe et du b"},{"id":"ft_2916764","title":"Chargé d'Affaires / Conducteur de travaux - Equipements de la Route H/F","company":"","location":"Nord","url":"https://candidat.francetravail.fr/offres/recherche/detail/2916764","source":"France Travail","date":"2026-05-22","days_old":11,"category":"Conduite de Travaux","size":"","is_recruiter":false,"description":"Votre mission   Nous recrutons pour notre établissement basé à Ostricourt, un(e) Chargé(e) d'Affaires / Conducteur(trice) de travaux en Equipements de la Route H/F.  Vous êtes en charge de l'organisation, du suivi et de la bonne réalisation des chantiers dont vous avez la responsabilité : travaux d'"},{"id":"ft_208RKXY","title":"Négociateur en transaction immobilière (H/F)","company":"PRIMO RENARD","location":"Le Kremlin-Bicêtre","url":"https://candidat.francetravail.fr/offres/recherche/detail/208RKXY","source":"France Travail","date":"2026-05-22","days_old":11,"category":"Transaction / Vente","size":"","is_recruiter":false,"description":"VOS MISSIONS\nDévelopper son secteur grâce à la prospection terrain\nDévelopper son réseau professionnel d'apporteurs d'affaires\nPromouvoir les biens de l'agence auprès de ses clients\nEffectuer les visites des maisons, appartements ou terrains\nEffectuer le suivi de son portefeuille clients\nRéaliser le"},{"id":"ft_2860340","title":"Chef de chantier travaux Électriques H/F","company":"","location":"Barberaz","url":"https://candidat.francetravail.fr/offres/recherche/detail/2860340","source":"France Travail","date":"2026-05-21","days_old":12,"category":"Conduite de Travaux","size":"","is_recruiter":false,"description":"\n            Dalkia Centre-Est recrute un.e Chef de chantier travaux Électriques pour son pôle Travaux de Chambéry.Prêt.e à rejoindre l’équipe travaux électricité ? Dans le cadre du développement de nos activités de travaux électriques sur le secteur de Chambéry, vous intégrerez une équipe terrain. "},{"id":"ft_2855647","title":"Conducteur de travaux principal TCE F/H - Cadres de chantier (H/F)","company":"Hays France","location":"Nantes","url":"https://candidat.francetravail.fr/offres/recherche/detail/2855647","source":"France Travail","date":"2026-05-21","days_old":12,"category":"Conduite de Travaux","size":"","is_recruiter":true,"description":"Descriptif du poste:\n\nCe que vous allez faire\nRattaché au directeur d'exploitation et au dirigeant, vous prenez la responsabilité opérationnelle complète de vos chantiers dès la phase de démarrage.\nPiloter vos chantiers en autonomie réelle\nVous êtes l'unique responsable technique et organisationnel "},{"id":"ft_2887788","title":"Conducteur.trice de travaux F/H - MTC Maisons Individuelles","company":"MTC Maisons Individuelles","location":"Angers","url":"https://candidat.francetravail.fr/offres/recherche/detail/2887788","source":"France Travail","date":"2026-05-21","days_old":12,"category":"Autre","size":"","is_recruiter":false,"description":"Sous la responsabilité de notre Directeur Technique, vous aurez pour mission le suivi des chantiers :\n \n \n \n- Vous assurez le bon déroulement des chantiers de construction de maisons individuelles qui vous seront confiés en toute autonomie,\n \n- Vous assurez la préparation (planning, approvisionnemen"},{"id":"ft_2874843","title":"Conducteur de Travaux Éclairage Public en CDI H/F","company":"Kalixens RH Loire Sud","location":"Saint-Étienne","url":"https://candidat.francetravail.fr/offres/recherche/detail/2874843","source":"France Travail","date":"2026-05-21","days_old":12,"category":"Conduite de Travaux","size":"","is_recruiter":false,"description":"POSTE : Conducteur de Travaux Éclairage Public en CDI H/F\nDESCRIPTION : KALIXENS RH recherche au sein d'une société spécialisée dans la conception et la construction de réseaux électriques, un Conducteur de travaux éclairage public (H/F) en CDI.\n \nRattaché(e) au Responsable d'exploitation, vous sere"},{"id":"ft_208PMCL","title":"Chargé de gestion locative en immobilier (H/F)","company":"LOGIREP","location":"Hauts De Seine","url":"https://candidat.francetravail.fr/offres/recherche/detail/208PMCL","source":"France Travail","date":"2026-05-21","days_old":12,"category":"Asset & Property Management","size":"","is_recruiter":false,"description":"Le Gestionnaire Habitat assiste le Responsable Habitat. Il assure les actes administratifs courants de la gestion d'immeubles ainsi que le suivi administratif des réclamations. Il assure la liaison permanente entre le personnel de terrain et le Responsable Habitat.\nVos missions : \nAssurer les actes "},{"id":"ft_2812397","title":"Chef-fe de chantier électricité F/H - Cadres de chantier (H/F)","company":"","location":"Nantes","url":"https://candidat.francetravail.fr/offres/recherche/detail/2812397","source":"France Travail","date":"2026-05-20","days_old":13,"category":"Conduite de Travaux","size":"","is_recruiter":false,"description":"Descriptif du poste:\n\nL'entité Automation Défense Systèmes, spécialisée dans la conception, l'intégration et la réalisation de projets clé en main pour l'industrie et la défense nationale, située à Nantes (Bouguenais, 44) recrute :\nCHEF DE CHANTIER (F/H) - CDI - Grands déplacements possibles\nSous la"},{"id":"ft_2816902","title":"Directeur Travaux - Génie Civil F/H - Cadres de chantier (H/F)","company":"Eiffage","location":"Lesquin","url":"https://candidat.francetravail.fr/offres/recherche/detail/2816902","source":"France Travail","date":"2026-05-20","days_old":13,"category":"Autre","size":"","is_recruiter":false,"description":"Descriptif du poste:\n\n\n Pour faciliter la lecture, l'écriture inclusive n'est pas utilisée dans le corps de cette annonce, les termes employés au masculin se réfèrent aussi bien aux femmes et aux hommes. \n\n \n\nVOTRE FUTUR ENVIRONNEMENT \n\nRattaché à l'agence de Lesquin (59), vous rejoignez la Directio"},{"id":"ft_2815706","title":"Responsable d'Exploitation - Espaces Verts F/H - Cadres de chantier (H/F)","company":"MICHAEL PAGE INTERNATIONAL FRANCE","location":"Cergy","url":"https://candidat.francetravail.fr/offres/recherche/detail/2815706","source":"France Travail","date":"2026-05-20","days_old":13,"category":"Autre","size":"","is_recruiter":true,"description":"Descriptif du poste:\n\n\nVéritable référent opérationnel, vous assurez le pilotage global des chantiers et la coordination de l'ensemble des acteurs, dans une logique de performance, de qualité et de sécurité.\n\n\n* Animer et encadrer les conducteurs de travaux et équipes terrain ;\n* Organiser les chant"},{"id":"ft_208MYYL","title":"Conseiller en transaction immobilière ANNEMASSE (H/F)","company":"CIE ALPINE DE PROMOTION IMMOBILIER","location":"Annemasse","url":"https://candidat.francetravail.fr/offres/recherche/detail/208MYYL","source":"France Travail","date":"2026-05-20","days_old":13,"category":"Transaction / Vente","size":"","is_recruiter":false,"description":"Notre agence 4807 IMMOBILIER recrute son ou sa commercial(e) expérimenté(e) dans le domaine de l'immobilier.\n\nVotre challenge : renforcer l'équipe en place pour développer le chiffre d'affaires de l'activité transaction !\nL'agence est idéalement située au cœur de la ville d'Annemasse bénéficiant de "},{"id":"ft_2820168","title":"Négociateur(trice) transaction (H/F)","company":"","location":"Strasbourg","url":"https://candidat.francetravail.fr/offres/recherche/detail/2820168","source":"France Travail","date":"2026-05-20","days_old":13,"category":"Asset & Property Management","size":"","is_recruiter":false,"description":"Nous accompagnons notre client, agence immobilière indépendante, dans le recrutement d'un(e) négociateur(trice) immobilier à Strasbourg. Rattaché(e) au directeur d'agence, vous intégrerez une agence ouverte sur les métiers de la transaction et de la gestion locative avec un portefeuille de potentiel"},{"id":"ft_2831088","title":"JURISTE DROIT IMMOBILIER/URBANISME - H/F","company":"COMPAGNIE DES ALPES","location":"Paris 9E Arrondissement","url":"https://candidat.francetravail.fr/offres/recherche/detail/2831088","source":"France Travail","date":"2026-05-20","days_old":13,"category":"Architecture & Urbanisme","size":"","is_recruiter":false,"description":"Description : Rattaché(e) à la Responsable Droit immobilier & Construction au sein de la Direction des affaires juridiques et de la conformité du groupe Compagnie des Alpes, vous accompagnerez les équipes opérationnelles et techniques dans la sécurisation juridique des opérations immobilières du Gro"},{"id":"ft_2757291","title":"Conducteur de travaux électricité confirmé F/H (H/F)","company":"Eiffage","location":"Vannes","url":"https://candidat.francetravail.fr/offres/recherche/detail/2757291","source":"France Travail","date":"2026-05-19","days_old":14,"category":"Conduite de Travaux","size":"","is_recruiter":false,"description":"Vous êtes un(e) expert(e) en conduite de travaux électriques ? Notre agence Eiffage Énergie Systèmes de Vannes vous propose une mission stimulante en tant que Conducteur(trice) de Travaux Électricité Confirmé(e). Vous piloterez un projet dédié, en apportant votre savoir-faire pour une gestion effica"},{"id":"ft_2769483","title":"Conducteur de travaux (H/F)","company":"","location":"Miélan","url":"https://candidat.francetravail.fr/offres/recherche/detail/2769483","source":"France Travail","date":"2026-05-19","days_old":14,"category":"Bureau d'Études / Ingénierie","size":"","is_recruiter":false,"description":"Jubil Intérim Auch vous propose un poste de Conducteur de travaux H/F sur Mielan (32) : Attaché(e) au Directeur Général, vous assurez le pilotage et la réalisation des chantiers, de la phase d'étude jusqu'à la livraison finale. Vos principales missions : Préconisation et réalisation des études (part"},{"id":"ft_2756699","title":"Chef de chantier H/F","company":"Hays France","location":"Toulouse","url":"https://candidat.francetravail.fr/offres/recherche/detail/2756699","source":"France Travail","date":"2026-05-19","days_old":14,"category":"Conduite de Travaux","size":"","is_recruiter":true,"description":"En tant que Chef de Chantier, vous :\n\n * Supervisez et coordonnez l'ensemble des travaux sur vos chantiers.\n * Organisez et planifiez le déroulement quotidien du chantier.\n * Veillez au respect des délais, de la qualité d'exécution et des règles de sécurité.\n * Managez les équipes et assurez une com"},{"id":"ft_2777612","title":"NÉGOCIATEUR- 2 ALPES - H/F","company":"COMPAGNIE DES ALPES","location":"Deux Alpes","url":"https://candidat.francetravail.fr/offres/recherche/detail/2777612","source":"France Travail","date":"2026-05-19","days_old":14,"category":"Autre","size":"","is_recruiter":false,"description":"Description : Pour le développement commercial de notre agence immobilière implantée aux 2 Alpes, nous recrutons un Négociateur en Immobilier (F/H). Vous interviendrez à toutes les étapes de la commercialisation et de la négociation. Les principales missions s’articuleront autour des activités suiva"},{"id":"ft_208JVPN","title":"1 AVOCAT EN DROIT IMMOBILIER/CONSTRUCTION/ASSURANCE (H/F)","company":"GLOBAL RH CONSULTING","location":"Principauté de Monaco","url":"https://candidat.francetravail.fr/offres/recherche/detail/208JVPN","source":"France Travail","date":"2026-05-18","days_old":15,"category":"Juridique & Finance Immo","size":"","is_recruiter":false,"description":"MISSION:\n\n- Apporter le conseil « technique », opérationnel et stratégique en matière de contentieux en droit immobilier, droit de la construction, droit civil et droit des assurances auprès d'une clientèle résidente et internationale.\n\n- Rédiger des actes judiciaires et non judiciaires relatifs à t"},{"id":"ft_2711017","title":"Conducteur de Travaux Menuiserie Extérieure en Rénovation H/F","company":"EMO France","location":"Créteil","url":"https://candidat.francetravail.fr/offres/recherche/detail/2711017","source":"France Travail","date":"2026-05-16","days_old":17,"category":"Conduite de Travaux","size":"","is_recruiter":false,"description":"POSTE : Conducteur de Travaux Menuiserie Extérieure en Rénovation H/F\nDESCRIPTION : Le Groupe DLSI et son agence EMO DLSI recrutent pour un de leurs clients, un :Conducteur de travaux menuiserie extérieure en rénovation (h/f)Notre client menuisier (PVC, Aluminium) intervenant sur des projets en marc"},{"id":"ft_208HZML","title":"Architecte du bâtiment (H/F)","company":"REMAKS","location":"Espagne","url":"https://candidat.francetravail.fr/offres/recherche/detail/208HZML","source":"France Travail","date":"2026-05-16","days_old":17,"category":"Promotion Immobilière","size":"","is_recruiter":false,"description":"Poste basé à Barcelone (Espagne).\n\nEn maîtrise d'œuvre ou en promotion immobilière, nous accompagnons nos clients dans la conception et la réalisation de leurs sites industriels (de la conception au suivi de réalisation : bâtiment, lots techniques, intégration de process).\nNos équipes interviennent "},{"id":"ft_208HGNG","title":"Pilote de travaux H/F (H/F)","company":"ALMA ENTREPRISE","location":"Bussy St Georges","url":"https://candidat.francetravail.fr/offres/recherche/detail/208HGNG","source":"France Travail","date":"2026-05-15","days_old":18,"category":"Autre","size":"","is_recruiter":false,"description":"Basée à Bussy-Saint-Georges (77), ALMA Entreprise est spécialisée dans la rénovation, la réhabilitation et l'aménagement tous corps d'état. Nous intervenons sur des marchés publics et privés avec une expertise particulière dans les environnements à fortes contraintes.\n\nNotre ambition est claire : al"},{"id":"ft_2689346","title":"Chef de groupe / conducteur de travaux principal F/H - Cadres de chantier (H/F)","company":"Hays France","location":"Montpellier","url":"https://candidat.francetravail.fr/offres/recherche/detail/2689346","source":"France Travail","date":"2026-05-15","days_old":18,"category":"Conduite de Travaux","size":"","is_recruiter":true,"description":"Descriptif du poste:\n\nRattaché à un Directeur d'exploitation, vous garantissez la réalisation des opérations qui vous sont confiées en relation constante et efficace avec tous les acteurs impliqués en interne et en externe et encadrez une équipe de Conducteurs de travaux.\nDans ce cadre, vos missions"},{"id":"ft_208DGXF","title":"Chef de chantier - Création Paysagère (H/F)","company":"PROJARDINS","location":"Villebon Sur Yvette","url":"https://candidat.francetravail.fr/offres/recherche/detail/208DGXF","source":"France Travail","date":"2026-05-12","days_old":21,"category":"Conduite de Travaux","size":"","is_recruiter":false,"description":"Projardins est une entreprise française fondée en 1990, comptant plus de 70 salariés et située dans le 91, à Villebon sur Yvette. Nous intervenons majoritairement dans le Nord de l'Essonne et le sud du 92 auprès d'acteurs privés, de collectivités locales et de copropriétés. Nous proposons différents"},{"id":"ft_208CWSH","title":"Conducteur de travaux en desamiantage (H/F)","company":"INGENIAPRO CONSULTING","location":"St Priest","url":"https://candidat.francetravail.fr/offres/recherche/detail/208CWSH","source":"France Travail","date":"2026-05-11","days_old":22,"category":"Conduite de Travaux","size":"","is_recruiter":false,"description":"Aujourd'hui, une entreprise en forte croissance (Est lyonnais) a besoin d'un profil solide. Pas d'un CV. D'un vrai pilote de chantiers.\n\n Ce qu'on attend de vous :\n\nVous prenez un chantier et vous le tenez de A à Z\nVous savez exactement ce que \"sécurité\" veut dire dans ce métier (et vous ne transige"},{"id":"ft_208CKZR","title":"CONDUCTEUR DE TRAVAUX H/F","company":"MENWAY EMPLOI","location":"Lullin","url":"https://candidat.francetravail.fr/offres/recherche/detail/208CKZR","source":"France Travail","date":"2026-05-11","days_old":22,"category":"Conduite de Travaux","size":"","is_recruiter":false,"description":"En lien direct avec la direction, vous prenez en charge le suivi complet de vos chantiers :\n\n- Planifier et organiser les chantiers (planning, moyens humains et matériels)\n\n- Assurer le suivi technique, administratif et financier des opérations\n\n- Coordonner les équipes terrain et les intervenants e"},{"id":"ft_2501388","title":"Chef de chantier (H/F)","company":"Mercato de l'emploi","location":"Coutances","url":"https://candidat.francetravail.fr/offres/recherche/detail/2501388","source":"France Travail","date":"2026-05-10","days_old":23,"category":"Conduite de Travaux","size":"","is_recruiter":false,"description":"RESPONSABILITÉS : \n\nEn lien direct avec le dirigeant, vous aurez pour mission :\n • L'organisation et la mise en place des chantiers,\n • l'approvisionnement en matériaux et matériels\n • le suivi de l'avancement des travaux et le respect des délais,\n • l'encadrement de votre équipe (de 2 à 5 personnes"},{"id":"ft_2445344","title":"Chef Chantier Maintenance H/F","company":"","location":"Saint-Bonnet-De-Mure","url":"https://candidat.francetravail.fr/offres/recherche/detail/2445344","source":"France Travail","date":"2026-05-08","days_old":25,"category":"Autre","size":"","is_recruiter":false,"description":"\n- \n Préparer, organiser et coordonner les interventions de maintenance.\n\n\n\n- \n Superviser les équipes sur le terrain et répartir les tâches.\n\n\n\n- \n Assurer le suivi des travaux et le respect des délais. Encadrer et motiver les équipes de techniciens.\n\n\n\n- \n Veiller à l'application des consignes de "},{"id":"ft_2438353","title":"Chef de Chantier TCE H/F","company":"asap work","location":"Gennevilliers","url":"https://candidat.francetravail.fr/offres/recherche/detail/2438353","source":"France Travail","date":"2026-05-08","days_old":25,"category":"Conduite de Travaux","size":"","is_recruiter":false,"description":"POSTE : Chef de Chantier TCE H/F\nDESCRIPTION : Nous recherchons un Chef de chantier TCE (H/F) sur Gennevilliers. Tu assureras le suivi de travaux dans le cadre d'opérations de réhabilitation haut de gamme, tels que des bâtiments tertiaires, des hôtels de luxe, et des ensembles patrimoniaux pour des "},{"id":"ft_2436533","title":"Chargé de maintenance patrimoine immobilier - Marseille H/F","company":"","location":"Marseille","url":"https://candidat.francetravail.fr/offres/recherche/detail/2436533","source":"France Travail","date":"2026-05-08","days_old":25,"category":"Autre","size":"","is_recruiter":false,"description":"Description de la mission:MISSIONUne mission d'intérêt généralNotre groupe participe activement à l'effort de construction de logements en France et propose de nombreuses solutions d'habitat adaptées à chacun.Notre patrimoine hétérogène dans le neuf et l'ancien fait l'objet d'un souci permanent d'en"},{"id":"ft_2375538","title":"Chef de Chantier - Conducteur de Travaux H/F","company":"Crit","location":"Valenciennes","url":"https://candidat.francetravail.fr/offres/recherche/detail/2375538","source":"France Travail","date":"2026-05-07","days_old":26,"category":"Conduite de Travaux","size":"","is_recruiter":false,"description":"POSTE : Chef de Chantier - Conducteur de Travaux H/F\nDESCRIPTION : Dans le cadre du développement de son activité, nous recherchons pour notre client, spécialisé dans le secteur du BTP, un Chef de Chantier / Conducteur de Travaux à Valenciennes (59300) en CDI. Le poste requiert une expérience de 1 à"},{"id":"ft_2399466","title":"Conducteur de Travaux (H/F) H/F","company":"","location":"Sallertaine","url":"https://candidat.francetravail.fr/offres/recherche/detail/2399466","source":"France Travail","date":"2026-05-07","days_old":26,"category":"Bureau d'Études / Ingénierie","size":"","is_recruiter":false,"description":"Qui recrute ? L'entreprise ARNAUDEAU est experte depuis plus de 60 ans dans la réalisation de structures et bâtiments métalliques en enveloppe globale (charpente, couverture, bardage, serrurerie et photovoltaïque). Majoritairement présent dans l'Ouest, Arnaudeau étend son activité à l'échelle nation"},{"id":"ft_2393838","title":"CHEF DE CHANTIER H/F","company":"","location":"Haute-Garonne","url":"https://candidat.francetravail.fr/offres/recherche/detail/2393838","source":"France Travail","date":"2026-05-07","days_old":26,"category":"Conduite de Travaux","size":"","is_recruiter":false,"description":"Votre mission  SPAC, filiale de COLAS, est un des acteurs majeurs des réseaux de transport et de distribution d'énergie (pétrole, gaz, électricité) en France et à l'international.   Dans le cadre du développement de notre activité Pipeline, notre agence de Toulouse recherche un(e) Chef de Chantier e"},{"id":"ft_2398819","title":"CHEF DE CHANTIER GENIE CIVIL H/F","company":"","location":"Ancenis-Saint-Géréon","url":"https://candidat.francetravail.fr/offres/recherche/detail/2398819","source":"France Travail","date":"2026-05-07","days_old":26,"category":"Conduite de Travaux","size":"","is_recruiter":false,"description":"En tant que Chef de chantier génie civil H/F, vous serez au coeur de l'action. \nSous la responsabilité du Conducteur de travaux, vous aurez la responsabilité de gérer une équipe de 3 personnes dans le cadre de la réalisation de travaux d'infrastructures réseaux secs (électricité, éclairage public, g"},{"id":"ft_207ZYVB","title":"Architecte Chef de Projet - CDI -Charleville-Reims-Epernay (H/F)","company":"TDA - TECHNIQUES DESIGN ARCHIT ECTURES","location":"Charleville Mezieres","url":"https://candidat.francetravail.fr/offres/recherche/detail/207ZYVB","source":"France Travail","date":"2026-05-07","days_old":26,"category":"Architecture & Urbanisme","size":"","is_recruiter":false,"description":"Architecte Chef de Projet - CDI - Grand Est (Charleville-Mézières / Reims / Épernay)\nVous sortez d'école ou vous avez déjà quelques années de pratique : ce qui nous intéresse, c'est votre capacité à vous impliquer dans un projet de bout en bout, à poser les bonnes questions et à progresser. Vous ser"},{"id":"ft_2309816","title":"Chef de projet / Conducteur de travaux Façades ITE & Parachèvement (H/F)","company":"","location":"Luxembourg","url":"https://candidat.francetravail.fr/offres/recherche/detail/2309816","source":"France Travail","date":"2026-05-06","days_old":27,"category":"Conduite de Travaux","size":"","is_recruiter":false,"description":"Chef de projet / Conducteur de travaux Façades ITE & Parachèvement (H/F) – CDI – Luxembourg À propos de nous QUASART est une entreprise spécialisée dans les travaux de façades, d’isolation thermique par l’extérieur (ITE) et de parachèvement. Dans le cadre de notre développement, nous renforçons nos "},{"id":"ft_2305640","title":"EXPERT / EXPERTE EN EVALUATION IMMOBILIERE (H/F)","company":"FRANCE PATRIMOINE EXPERTISE","location":"Nice","url":"https://candidat.francetravail.fr/offres/recherche/detail/2305640","source":"France Travail","date":"2026-05-06","days_old":27,"category":"Expertise / Évaluation","size":"","is_recruiter":false,"description":"RESPONSABILITÉS : \n\n👔Rattaché(e) au Responsable, vous réaliserez des expertises immobilières dans le respect de la Charte de l'expertise en évaluation immobilière. A ce titre, vous serez notamment chargé(e) de :\n • Collecter et analyser les documents transmis par les clients\n • Effectuer les visites"},{"id":"ft_2286725","title":"Chef de Chantier Caténaire H/F","company":"","location":"Isère","url":"https://candidat.francetravail.fr/offres/recherche/detail/2286725","source":"France Travail","date":"2026-05-05","days_old":28,"category":"Conduite de Travaux","size":"","is_recruiter":false,"description":"Votre mission  Nos agences régionales recrutent ! Intégré(e) à nos équipes de l'agence Ile-de-France et Nord / Sud Est / Sud Ouest  vous jouez un rôle essentiel dans l'installation, l'entretien, et la réparation des systèmes de caténaires, garantissant ainsi la sécurité et la fiabilité des infrastru"},{"id":"ft_207TDYQ","title":"négociateur immobilier transaction  (H/F)","company":"ERA IMMOBILIER","location":"Le Mans","url":"https://candidat.francetravail.fr/offres/recherche/detail/207TDYQ","source":"France Travail","date":"2026-05-04","days_old":29,"category":"Transaction / Vente","size":"5k+","is_recruiter":false,"description":"SI CETTE OFFRE VOUS INTERESSE, MERCI DE VOUS INSCRIRE SUR LA PLATEFORME \"MES EVENMENTS EMPLOI\" AFIN DE RENCONTRER LE RECRUTEUR DIRECTEMENT LE 25 JUIN, lien ci-dessous. \nhttps://mesevenementsemploi.francetravail.fr/mes-evenements-emploi/evenement/673867/opportunites-dans-l-immobilier-le-mans \n\nVous t"},{"id":"ft_2053764","title":"Responsable de Chantier Électrique (H/F)","company":"","location":"Périgueux","url":"https://candidat.francetravail.fr/offres/recherche/detail/2053764","source":"France Travail","date":"2026-04-28","days_old":35,"category":"Conduite de Travaux","size":"","is_recruiter":false,"description":"Les missions du poste:\n#çamatchentrenous\n✅ Actionnariat salarié à 85 % (esprit entrepreneurial)\n✅ Formation continue d'excellence via la \"Fauché School\"\n✅ Avantages majeurs : Prime vacances 30 %, intéressement et participation\n\n🗣 \"Rejoignez le leader français indépendant des solutions énergétiques !"},{"id":"ft_2051109","title":"Responsable de conception et de réalisation de constructions F/H - Ville de Bondy","company":"Ville de Bondy","location":"Bondy","url":"https://candidat.francetravail.fr/offres/recherche/detail/2051109","source":"France Travail","date":"2026-04-28","days_old":35,"category":"Autre","size":"","is_recruiter":false,"description":"Descriptif du poste : \nReprésente ou assiste le maître d’ouvrage sur les plans technique, administratif et financier, lors des phases de programmation, conception et réalisation de projets neufs ou de restructuration lourde du patrimoine bâti de la collectivité.\n Missions Principales : \nRéalisation "},{"id":"ft_1951720","title":"Conducteur de Travaux Menuiserie H/F","company":"Slash Intérim","location":"Montpellier","url":"https://candidat.francetravail.fr/offres/recherche/detail/1951720","source":"France Travail","date":"2026-04-26","days_old":37,"category":"Conduite de Travaux","size":"","is_recruiter":false,"description":"POSTE : Conducteur de Travaux Menuiserie H/F\nDESCRIPTION : Vous aurez pour mission principale la coordination opérationnelle d'un ou plusieurs chantiers. Véritable pivot du chantier, vous dirigerez les travaux, encadrerez les équipes et veillerez au respect des délais, de la sécurité et de la qualit"},{"id":"ft_1613561","title":"AVOCAT DROIT  IMMOBILIER / CONSTRUCTION (H/F)","company":"","location":"Bordeaux","url":"https://candidat.francetravail.fr/offres/recherche/detail/1613561","source":"France Travail","date":"2026-04-17","days_old":46,"category":"Juridique & Finance Immo","size":"","is_recruiter":false,"description":"EN BREF / AVOCAT / COLLABORATION LIBERALE / DROIT CONSTRUCTION / IMMOBILIER / COLLABORATION LIBERALE / PRIME / BORDEAUX CENTRE Je recrute pour le compte de mon client, un cabinet spécialisé en droit de la construction & immobilier, un avocat en collaboration libérale. Cabinet de 5 personnes en plein"},{"id":"ft_1467483","title":"Chef De Chantier Tce H/f","company":"","location":"Paris","url":"https://candidat.francetravail.fr/offres/recherche/detail/1467483","source":"France Travail","date":"2026-04-15","days_old":48,"category":"Conduite de Travaux","size":"","is_recruiter":false,"description":"Le Cercle Intérimaire/INSTEAD recherche un Chef de Chantier TCE expérimenté pour rejoindre nos équipes. Vous serez responsable de la supervision et de la coordination des chantiers, en veillant au respect des délais, des budgets et des normes de qualité et de sécurité.\nMissions principales :\nOrganis"},{"id":"ft_1479221","title":"Asset Property Manager (H/F)","company":"","location":"Villeneuve-D'Ascq","url":"https://candidat.francetravail.fr/offres/recherche/detail/1479221","source":"France Travail","date":"2026-04-15","days_old":48,"category":"Asset & Property Management","size":"","is_recruiter":false,"description":"LE PROJET / LE CONTEXTELe Centre Immobilier France a en charge le développement de nouveaux points de contacts par l'achat, la location de terrains ou d'emplacements répondant aux stratégies de l'entreprise ainsi que la gestion globale et l'optimisation de notre patrimoine immobilier (magasins, entr"},{"id":"ft_206YNZF","title":"Négociateur / Négociatrice immobilier (H/F)","company":"NOUVEAU CONCEPT IMMOBILIER","location":"Villecresnes","url":"https://candidat.francetravail.fr/offres/recherche/detail/206YNZF","source":"France Travail","date":"2026-04-15","days_old":48,"category":"Transaction / Vente","size":"","is_recruiter":false,"description":"ORPI VILLECRESNES ET MANDRES LES ROSES\nAu sein d'une agence immobilière, vous serez en charge de la prospection de biens immobiliers, et de la vente sur le territoire de Villecresnes, de Mandres les Roses et des alentours.\nVous avez 1 an d'expérience dans la transaction immobilière indispensable.\nFo"},{"id":"ft_206XJVZ","title":"Négociateur transaction immobilière (H/F)","company":"CITYA PONT-DE-CHERUY","location":"Pont De Cheruy","url":"https://candidat.francetravail.fr/offres/recherche/detail/206XJVZ","source":"France Travail","date":"2026-04-14","days_old":49,"category":"Transaction / Vente","size":"","is_recruiter":false,"description":"Agence immobilière reconnue sur le secteur de Pont de Chéruy, nous accompagnons nos clients dans leurs projets d'achat et de vente avec professionnalisme, proximité et sens du service.\nDans le cadre de notre développement nous recherchons un (e) négociateur (trice) pour renforcer notre équipe.\nVos m"},{"id":"ft_1381432","title":"Conducteur de Travaux Menuiserie Bois H/F","company":"EMO France","location":"Annemasse","url":"https://candidat.francetravail.fr/offres/recherche/detail/1381432","source":"France Travail","date":"2026-04-11","days_old":52,"category":"Conduite de Travaux","size":"","is_recruiter":false,"description":"POSTE : Conducteur de Travaux Menuiserie Bois H/F\nDESCRIPTION : Le Groupe DLSI et son agence EMO DLSI recrutent pour un de leurs clients, un :Conducteur de travaux menuiserie bois (h/f)Notre client menuisier bois intervenant sur des projets en marchés publics et privés recherche pour compléter son s"},{"id":"ft_1105121","title":"Chef(fe) de Chantier - Grands Projets Pipeline France (H/F)","company":"","location":"Gironde","url":"https://candidat.francetravail.fr/offres/recherche/detail/1105121","source":"France Travail","date":"2026-04-03","days_old":60,"category":"Autre","size":"","is_recruiter":false,"description":"Votre mission En tant que Chef / Cheffe de chantier, vous organisez et pilotez les travaux de construction de pipelines sur des projets de grande envergure, en grand déplacement sur le territoire national. Vous assurez la coordination des équipes, la qualité des ouvrages et la sécurité sur l'ensembl"},{"id":"ft_1105118","title":"Chef(fe) de Chantier - Projets Industriels France (H/F)","company":"","location":"Gironde","url":"https://candidat.francetravail.fr/offres/recherche/detail/1105118","source":"France Travail","date":"2026-04-03","days_old":60,"category":"Autre","size":"","is_recruiter":false,"description":"Votre mission En tant que Chef / Cheffe de chantier, vous organisez et pilotez les travaux de construction d'ensembles de tuyauterie pour installations gazières (stations de stockage ou de compression de gaz, postes de sectionnement, etc.), en grand déplacement sur le territoire national. Vous assur"},{"id":"ft_1105131","title":"Conducteur Travaux - Grands Projets Pipeline France (H/F)","company":"","location":"Gironde","url":"https://candidat.francetravail.fr/offres/recherche/detail/1105131","source":"France Travail","date":"2026-04-03","days_old":60,"category":"Autre","size":"","is_recruiter":false,"description":"Votre mission En tant que Conducteur/Conductrice de Travaux, vous pilotez des chantiers de construction de canalisations de gaz sous haute pression au sein d'une équipe projet pluridisciplinaire et en grand déplacement. Vous coordonnez l'ensemble des opérations terrain (terrassement, pose du pipelin"},{"id":"ft_1105120","title":"Conducteur Travaux Pipeline (13) (H/F)","company":"","location":"Bouches-Du-Rhône","url":"https://candidat.francetravail.fr/offres/recherche/detail/1105120","source":"France Travail","date":"2026-04-03","days_old":60,"category":"Autre","size":"","is_recruiter":false,"description":"Votre mission En tant que Conducteur/Conductrice de Travaux au sein de notre agence SPAC de Port-de-Bouc (13- près Martigues), vous pilotez des chantiers de construction et de rénovation de pipelines (gaz, produits pétroliers, produits chimiques et/ou énergies renouvelables) sur la région Sud-Est. V"},{"id":"ft_206KZDY","title":"Chargé de patrimoine et des opérations de quittancement (H/F)","company":"LES RESIDENCES SOCIETE ANONYME D'HABITAT","location":"Mantes La Jolie","url":"https://candidat.francetravail.fr/offres/recherche/detail/206KZDY","source":"France Travail","date":"2026-04-02","days_old":61,"category":"Asset & Property Management","size":"","is_recruiter":false,"description":"Au sein de la Direction de la Gestion Locatives et des Relations Locataires, et sous la responsabilité du Responsable de service Patrimoine et Quittancement, vous créez, fiabilisez et mettez à jour les données de la base Patrimoine et contrôlez les données pour le quittancement. \n \nSur le périmètre "},{"id":"ft_1070182","title":"Alternance Gestionnaire base patrimoine et quittancement Junior H/F","company":"In'li","location":"Puteaux","url":"https://candidat.francetravail.fr/offres/recherche/detail/1070182","source":"France Travail","date":"2026-04-02","days_old":61,"category":"Autre","size":"","is_recruiter":false,"description":"Nous recherchons en alternance un/une :\n\nGestionnaire base patrimoine et quittancement Junior H/F \n\nOsez exprimer qui vous êtes vraiment !\n\nSous la supervision du/de la Responsable du Pôle Base Patrimoine et Quittancement, vous accompagnez le/la Gestionnaire Base Patrimoine et Quittancement est gara"},{"id":"ft_206HNGJ","title":"Chef de chantier génie climatique CVCP (H/F)","company":"BSV","location":"Lassigny","url":"https://candidat.francetravail.fr/offres/recherche/detail/206HNGJ","source":"France Travail","date":"2026-04-01","days_old":62,"category":"Conduite de Travaux","size":"","is_recruiter":false,"description":"Vos missions\n\nRattaché(e) à l'activité travaux, vous intervenez sur des projets de génie climatique et plomberie (tertiaire, industriel, neuf et rénovation).\n\nChez BSV ENERGIE, le chef de chantier est avant tout un homme / une femme de terrain, impliqué(e) au quotidien dans la réalisation des travau"},{"id":"ft_0987111","title":"NGOCIATEUR IMMOBILIER EN TRANSACTION (H/F)  CDI","company":"","location":"Juvisy-Sur-Orge","url":"https://candidat.francetravail.fr/offres/recherche/detail/0987111","source":"France Travail","date":"2026-04-01","days_old":62,"category":"Juridique & Finance Immo","size":"","is_recruiter":false,"description":"Dans le cadre de notre développement commercial, nous recrutons un(e) Négociateur(trice) Immobilier en Transaction en CDI.\nVos missionsProspecter de nouveaux clients et développer un réseau professionnel solide sur votre secteur\n- Présenter les biens et organiser les visites avec les acheteurs poten"},{"id":"ft_205LQZQ","title":"Architecte DPLG / HMONP - Promotion immobilière (H/F)","company":"BULDU HOLDING","location":"Perpignan","url":"https://candidat.francetravail.fr/offres/recherche/detail/205LQZQ","source":"France Travail","date":"2026-03-16","days_old":78,"category":"Promotion Immobilière","size":"","is_recruiter":false,"description":"Lieu : Perpignan (66)\nType de contrat : CDI - Temps plein\nEntreprise : Société de promotion immobilière basée dans les Pyrénées-Orientales\n\nDescription du poste\n\nDans le cadre du développement de nos opérations immobilières, nous recherchons un(e) Architecte DPLG / HMONP inscrit(e) à l'Ordre des Arc"},{"id":"ft_8210992","title":"PILOTE DE TRAVAUX / EXPLOITATION (F/H) (H/F)","company":"","location":"Gennevilliers","url":"https://candidat.francetravail.fr/offres/recherche/detail/8210992","source":"France Travail","date":"2026-01-22","days_old":131,"category":"Autre","size":"","is_recruiter":false,"description":"Notre client, basé à GENNEVILLIERS (92), est actif dans le domaine de la fabrication de matériels de transport, offrant des opportunités dynamiques pour des professionnels motivés. Pourquoi rejoindre cette entreprise ? Notre client, leader dans son secteur, offre des défis excitants dans une ambianc"},{"id":"ft_5940745","title":"Chef de Chantier VRD - Périers H/F","company":"","location":"Périers","url":"https://candidat.francetravail.fr/offres/recherche/detail/5940745","source":"France Travail","date":"2025-11-28","days_old":186,"category":"Bureau d'Études / Ingénierie","size":"","is_recruiter":false,"description":"POSTE : Chef de Chantier VRD - Périers H/F\nDESCRIPTION : Vinci Construction - Division Route France recherche un(e) chef de chantier au sein de la délégation Ile-de-France / Normandie.\nPartenaire des territoires, la division Route France de VINCI CONSTRUCTION développe des solutions de mobilité pour"},{"id":"ft_9563346","title":"Ngociateur immobilier Transaction (H/F) - ERA Saint-Jean Immobilier","company":"","location":"Bordeaux","url":"https://candidat.francetravail.fr/offres/recherche/detail/9563346","source":"France Travail","date":"2024-12-19","days_old":530,"category":"Autre","size":"","is_recruiter":false,"description":"Vous intégrez l'équipe transaction sur le secteur Bordeaux () et participez à la vie de l'agence.\nAu sein de la ville dynamique de Bordeaux, notre agence ERA idéalement située en face de la gare Saint-Jean depuis 18 ans, est déjà composée d'une équipe conviviale de 7 collaborateurs et veut renforcer"}][];
+var META = {"updated": "02/06/2026 15:27 UTC", "total": 113}{"updated":"—","total":0};
+
+// ══════════════════════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════════════════════
+var filters = { cat: new Set(), loc: new Set(), src: new Set(), age: null, size: new Set(), crm: new Set(), recruiter: null };
+var savedIds = new Set(JSON.parse(localStorage.getItem('briks_saved') || '[]'));
+var savedOnly = false;
+
+// ══════════════════════════════════════════════════════════════
+// FILTERS
+// ══════════════════════════════════════════════════════════════
+function toggleFilter(type, value, el) {
+  if (type === 'age') {
+    if (filters.age === value) { filters.age = null; el.classList.remove('active'); }
+    else {
+      document.querySelectorAll('.pill').forEach(p => { if (p !== el && p.onclick && p.onclick.toString().includes("'age'")) p.classList.remove('active'); });
+      filters.age = value; el.classList.add('active');
+    }
+  } else if (type === 'recruiter') {
+    if (filters.recruiter === value) { filters.recruiter = null; el.classList.remove('active'); }
+    else {
+      document.querySelectorAll('.pill').forEach(p => { if (p !== el && p.onclick && p.onclick.toString().includes("'recruiter'")) p.classList.remove('active'); });
+      filters.recruiter = value; el.classList.add('active');
+    }
+  } else {
+    var set = filters[type];
+    if (set.has(value)) { set.delete(value); el.classList.remove('active'); }
+    else { set.add(value); el.classList.add('active'); }
+  }
+  applyFilters();
+  updateChips();
+}
+
+function updateChips() {
+  var bar = document.getElementById('chips-bar');
+  bar.innerHTML = '';
+  var add = (label, clear) => {
+    var c = document.createElement('div'); c.className = 'chip';
+    c.innerHTML = label + '<button onclick="' + clear + '">×</button>';
+    bar.appendChild(c);
+  };
+  filters.cat.forEach(v => add(v, "removeFilter('cat','"+v+"')"));
+  filters.loc.forEach(v => add(v, "removeFilter('loc','"+v+"')"));
+  filters.src.forEach(v => add(v, "removeFilter('src','"+v+"')"));
+  filters.size.forEach(v => add(v, "removeFilter('size','"+v+"')"));
+  filters.crm.forEach(v => add(crmLabel(v), "removeFilter('crm','"+v+"')"));
+  if (filters.age) add('≤ '+filters.age+' j', "removeFilter('age',null)");
+  if (filters.recruiter) add(filters.recruiter === 'hide' ? 'Sans cabinets' : 'Cabinets seuls', "removeFilter('recruiter',null)");
+}
+
+function crmLabel(v) {
+  return {tc:'T&Cs', open:'Job ouvert', client:'Client actif', 'no-crm':'Hors CRM'}[v] || v;
+}
+
+function removeFilter(type, value) {
+  if (type === 'age' || type === 'recruiter') {
+    filters[type] = null;
+    document.querySelectorAll('.pill').forEach(p => {
+      if (p.onclick && p.onclick.toString().includes("'"+type+"'")) p.classList.remove('active');
+    });
+  } else {
+    filters[type].delete(value);
+    document.querySelectorAll('.pill').forEach(p => {
+      if (p.classList.contains('active') && p.onclick && p.onclick.toString().includes("'"+value+"'")) p.classList.remove('active');
+    });
+  }
+  applyFilters();
+  updateChips();
+}
+
+function toggleSavedOnly() {
+  savedOnly = !savedOnly;
+  var btn = document.getElementById('saved-toggle');
+  btn.classList.toggle('active', savedOnly);
+  applyFilters();
+}
+
+// ══════════════════════════════════════════════════════════════
+// APPLY FILTERS
+// ══════════════════════════════════════════════════════════════
+function applyFilters() {
+  var q = (document.getElementById('search-input').value || '').toLowerCase().trim();
+  var sortMode = document.getElementById('sort-select').value;
+
+  var filtered = JOBS.filter(j => {
+    if (savedOnly && !savedIds.has(j.id)) return false;
+    if (q && !((j.title||'').toLowerCase().includes(q) || (j.company||'').toLowerCase().includes(q) || (j.location||'').toLowerCase().includes(q))) return false;
+    if (filters.cat.size && !filters.cat.has(j.category)) return false;
+    if (filters.loc.size && !locMatch(j.location, filters.loc)) return false;
+    if (filters.src.size && !filters.src.has(j.source)) return false;
+    if (filters.age && (j.days_old || 999) > filters.age) return false;
+    if (filters.size.size && !filters.size.has(j.size)) return false;
+    if (filters.crm.size) {
+      var ok = false;
+      if (filters.crm.has('tc') && j.has_tc) ok = true;
+      if (filters.crm.has('open') && j.has_open_job) ok = true;
+      if (filters.crm.has('client') && j.is_client) ok = true;
+      if (filters.crm.has('no-crm') && !j.crm_link) ok = true;
+      if (!ok) return false;
+    }
+    if (filters.recruiter === 'hide' && j.is_recruiter) return false;
+    if (filters.recruiter === 'only' && !j.is_recruiter) return false;
+    return true;
+  });
+
+  // Sort
+  if (sortMode === 'date') filtered.sort((a,b) => (a.days_old||999) - (b.days_old||999));
+  else if (sortMode === 'company') filtered.sort((a,b) => (a.company||'').localeCompare(b.company||''));
+  else if (sortMode === 'crm') filtered.sort((a,b) => {
+    if (a.has_tc !== b.has_tc) return a.has_tc ? -1 : 1;
+    return (a.days_old||999) - (b.days_old||999);
+  });
+
+  renderJobs(filtered);
+  document.getElementById('count-display').textContent = filtered.length;
+}
+
+function locMatch(loc, set) {
+  if (!loc) return false;
+  var l = loc.toLowerCase();
+  for (var v of set) {
+    var vl = v.toLowerCase();
+    if (l.includes(vl) || vl.includes(l)) return true;
+  }
+  return false;
+}
+
+// ══════════════════════════════════════════════════════════════
+// RENDER
+// ══════════════════════════════════════════════════════════════
+function renderJobs(jobs) {
+  var list = document.getElementById('jobs-list');
+  var noRes = document.getElementById('no-results');
+  if (!jobs.length) { list.innerHTML = ''; noRes.style.display = 'block'; return; }
+  noRes.style.display = 'none';
+
+  list.innerHTML = jobs.map(j => {
+    var saved = savedIds.has(j.id);
+    var initials = (j.company || '??').split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();
+    var age = j.days_old <= 1 ? 'Aujourd\'hui' : j.days_old === 2 ? 'Hier' : j.days_old + ' j';
+    var srcClass = srcBadgeClass(j.source);
+    var cardClass = 'job-card' + (saved ? ' saved' : '') + (j.is_client ? ' is-client' : j.is_recruiter ? ' is-recruiter' : '');
+
+    var crmHtml = '';
+    if (j.has_tc || j.has_open_job || j.is_client || j.consultant) {
+      crmHtml = '<div class="crm-indicators" style="margin-top:5px;">';
+      if (j.has_tc) crmHtml += '<div class="crm-dot tc" title="T&Cs signés"></div>';
+      if (j.has_open_job) crmHtml += '<div class="crm-dot open-job" title="Job ouvert"></div>';
+      if (j.crm_link) crmHtml += '<a class="crm-link" href="'+j.crm_link+'" target="_blank" onclick="event.stopPropagation()">CRM</a>';
+      if (j.consultant) crmHtml += '<span class="consultant-badge">'+escHtml(j.consultant)+'</span>';
+      crmHtml += '</div>';
+    }
+
+    return `<div class="${cardClass}" onclick="openJob('${escHtml(j.url)}')">
+  <div class="co-logo">${initials}</div>
+  <div class="jbody">
+    <div class="jtop">
+      <span class="jtitle">${escHtml(j.title)}</span>
+      <div class="jright">
+        <span class="jdate">${age}</span>
+        <button class="save-btn${saved?' on':''}" onclick="event.stopPropagation();toggleSave('${j.id}',this)" title="Sauvegarder">${saved?'♥':'♡'}</button>
+      </div>
+    </div>
+    <div class="jco">${escHtml(j.company || '—')}</div>
+    <div class="jmeta">
+      ${j.location ? '<span class="badge badge-loc">📍 '+escHtml(j.location)+'</span>' : ''}
+      ${j.category ? '<span class="badge badge-cat">'+escHtml(j.category)+'</span>' : ''}
+      ${j.size ? '<span class="badge badge-size">'+escHtml(j.size)+'</span>' : ''}
+      <span class="badge badge-src ${srcClass}">${escHtml(j.source)}</span>
+    </div>
+    ${crmHtml}
+  </div>
+</div>`;
+  }).join('');
+}
+
+function srcBadgeClass(src) {
+  if (!src) return '';
+  var s = src.toLowerCase();
+  if (s.includes('france travail')) return 'src-ft';
+  if (s.includes('apec')) return 'src-apec';
+  if (s.includes('jungle') || s.includes('wttj')) return 'src-wttj';
+  if (s.includes('hellowork') || s.includes('hello work')) return 'src-hw';
+  if (s.includes('industrie')) return 'src-linrec';
+  return '';
+}
+
+function openJob(url) {
+  if (url) window.open(url, '_blank');
+}
+
+function escHtml(s) {
+  if (!s) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ══════════════════════════════════════════════════════════════
+// SAVED JOBS
+// ══════════════════════════════════════════════════════════════
+function toggleSave(id, btn) {
+  if (savedIds.has(id)) { savedIds.delete(id); btn.textContent = '♡'; btn.classList.remove('on'); }
+  else { savedIds.add(id); btn.textContent = '♥'; btn.classList.add('on'); }
+  localStorage.setItem('briks_saved', JSON.stringify([...savedIds]));
+  document.getElementById('saved-count').textContent = savedIds.size;
+  if (savedOnly) applyFilters();
+}
+
+// ══════════════════════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════════════════════
+function initApp() {
+  document.getElementById('meta-date').textContent = META.updated || '—';
+  document.getElementById('meta-total').textContent = JOBS.length;
+  document.getElementById('saved-count').textContent = savedIds.size;
+  applyFilters();
+}
+
+// Boot
+_initAuth();
+</script>
+</body>
+</html>
