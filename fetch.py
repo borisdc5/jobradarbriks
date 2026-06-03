@@ -519,6 +519,7 @@ def generate_html(jobs):
         html = f.read()
 
     jobs_json = json.dumps(jobs, ensure_ascii=False, separators=(',', ':'))
+    jobs_json = jobs_json.replace('</', '<\\/')  # évite </script> dans les descriptions
     meta_json = json.dumps({
         'updated': NOW.strftime('%d/%m/%Y %H:%M UTC'),
         'total':   len(jobs),
