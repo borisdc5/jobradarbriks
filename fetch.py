@@ -244,8 +244,16 @@ def ft_search(token, query, max_results=150):
     req.add_header('Accept', 'application/json')
     try:
         resp = urllib.request.urlopen(req, context=ctx, timeout=20)
-        data = json.loads(resp.read())
+        body = resp.read()
+        if not body or resp.status == 204:
+            return []  # Aucun résultat
+        data = json.loads(body)
         return data.get('resultats', [])
+    except urllib.error.HTTPError as e:
+        if e.code in (204, 400, 404):
+            return []  # Pas de résultats pour cette requête
+        print(f'  [FT] Search "{query}" HTTP {e.code}')
+        return []
     except Exception as e:
         print(f'  [FT] Search "{query}" error: {e}')
         return []
@@ -343,7 +351,7 @@ def apec_get_token():
     if not APEC_EMAIL or not APEC_PASSWORD:
         print('  [APEC] Pas de credentials — skip')
         return None
-    url  = 'https://authentification-apec.apec.fr/cas/v1/tickets'
+    url  = 'https://authentification-candidat.apec.fr/cas/v1/tickets'
     data = urllib.parse.urlencode({'username': APEC_EMAIL, 'password': APEC_PASSWORD}).encode()
     req  = urllib.request.Request(url, data=data, method='POST')
     req.add_header('Content-Type', 'application/x-www-form-urlencoded')
@@ -352,9 +360,10 @@ def apec_get_token():
         loc  = resp.headers.get('Location', '')
         tgt  = loc.split('/')[-1] if loc else ''
         if not tgt:
+            print('  [APEC] Auth échouée : pas de TGT dans la réponse')
             return None
         # Récupère le ST
-        url2 = f'https://authentification-apec.apec.fr/cas/v1/tickets/{tgt}'
+        url2  = f'https://authentification-candidat.apec.fr/cas/v1/tickets/{tgt}'
         data2 = urllib.parse.urlencode({'service': 'https://www.apec.fr'}).encode()
         req2  = urllib.request.Request(url2, data=data2, method='POST')
         req2.add_header('Content-Type', 'application/x-www-form-urlencoded')
