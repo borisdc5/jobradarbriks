@@ -226,6 +226,10 @@ def ft_get_token():
     try:
         resp = urllib.request.urlopen(req, context=ctx, timeout=15)
         return json.loads(resp.read())['access_token']
+    except urllib.error.HTTPError as e:
+        body = e.read().decode('utf-8', errors='replace')
+        print(f'  [FT] Token error HTTP {e.code}: {body[:300]}')
+        return None
     except Exception as e:
         print(f'  [FT] Token error: {e}')
         return None
