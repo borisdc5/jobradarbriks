@@ -214,7 +214,7 @@ def ft_get_token():
     if not FT_CLIENT_ID or not FT_CLIENT_SECRET:
         print('  [FT] Pas de credentials — skip')
         return None
-    url  = 'https://entreprise.francetravail.fr/connexion/oauth2/access_token?realm=/partenaire'
+    url  = 'https://entreprise.francetravail.fr/connexion/oauth2/access_token?realm=%2Fpartenaire'
     data = urllib.parse.urlencode({
         'grant_type': 'client_credentials',
         'client_id': FT_CLIENT_ID,
