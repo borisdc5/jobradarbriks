@@ -181,6 +181,7 @@ def normalize(s):
 
 def classify_category(title, description=''):
     text = normalize(title + ' ' + description)
+    text = re.sub(r'[./]', ' ', text)  # "Chef.Fe" / "H/F" → espaces, pour matcher les mots-clés
     for cat, keywords in CATEGORY_RULES:
         for kw in keywords:
             if kw in text:
@@ -441,6 +442,136 @@ def fetch_apec():
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# HELLOWORK (scraping HTML — pas d'API publique)
+# ─────────────────────────────────────────────────────────────────────────────
+
+import html as _html_mod
+
+HW_SECTORS = ['BTP', 'Immo']  # codes secteurs HelloWork
+HW_MAX_PAGES = 5              # ~30 offres/page → jusqu'à 150 offres/secteur
+
+def hw_relative_to_date(text):
+    """Convertit 'il y a 14 heures' / 'il y a 3 jours' / 'Aujourd'hui' en date ISO."""
+    text = (text or '').strip().lower()
+    if not text:
+        return NOW.strftime('%Y-%m-%d')
+    if 'aujourd' in text:
+        return NOW.strftime('%Y-%m-%d')
+    if 'hier' in text:
+        return (NOW - timedelta(days=1)).strftime('%Y-%m-%d')
+    m = re.search(r'(\d+)\s*heure', text)
+    if m:
+        return NOW.strftime('%Y-%m-%d')
+    m = re.search(r'(\d+)\s*jour', text)
+    if m:
+        return (NOW - timedelta(days=int(m.group(1)))).strftime('%Y-%m-%d')
+    m = re.search(r'(\d+)\s*semaine', text)
+    if m:
+        return (NOW - timedelta(weeks=int(m.group(1)))).strftime('%Y-%m-%d')
+    m = re.search(r'(\d+)\s*mois', text)
+    if m:
+        return (NOW - timedelta(days=int(m.group(1)) * 30)).strftime('%Y-%m-%d')
+    return NOW.strftime('%Y-%m-%d')
+
+def hw_fetch_page(sector, page):
+    params = {
+        'k': '', 'l': '', 'c': 'CDI', 'd': 'all',
+        'et': 'Entreprises', 's': sector, 'p': page,
+    }
+    url = 'https://www.hellowork.com/fr-fr/emploi/recherche.html?' + urllib.parse.urlencode(params)
+    req = urllib.request.Request(url)
+    req.add_header('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
+                                  '(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36')
+    try:
+        resp = urllib.request.urlopen(req, context=ctx, timeout=20)
+        return resp.read().decode('utf-8', errors='replace')
+    except Exception as e:
+        print(f'  [HelloWork] Page {page} ({sector}) error: {e}')
+        return ''
+
+def hw_parse_jobs(html_text):
+    jobs = []
+    blocks = re.split(r'(?=<li data-id-storage-target="item")', html_text)
+    for block in blocks[1:]:
+        m_id = re.search(r'data-id-storage-item-id="(\d+)"', block)
+        if not m_id:
+            continue
+        jid = m_id.group(1)
+
+        m_anchor = re.search(r'<a\b[^>]*?data-cy="offerTitle"[^>]*>', block, re.S)
+        if not m_anchor:
+            continue
+        m_title = re.search(r'title="([^"]+)"', m_anchor.group(0))
+        if not m_title:
+            continue
+        title = _html_mod.unescape(m_title.group(1).strip())
+
+        m_company = re.search(r'<p class="typo-s inline">([^<]*)</p>', block)
+        company = _html_mod.unescape(m_company.group(1).strip()) if m_company else ''
+
+        # Le title="" contient "Titre - ... - Entreprise" → on retire le suffixe entreprise dupliqué
+        if company and title.endswith(company):
+            title = title[:-len(company)].rstrip(' -–')
+
+        m_loc = re.search(r'data-cy="localisationCard"\s*>\s*([^<]+?)\s*</div>', block, re.S)
+        location = _html_mod.unescape(m_loc.group(1).strip()) if m_loc else ''
+
+        m_date = re.search(r'text-grey-500[^>]*>\s*([^<]+?)\s*</div>', block, re.S)
+        date_relative = m_date.group(1).strip() if m_date else ''
+
+        jobs.append({
+            'jid': jid,
+            'title': title,
+            'company': company,
+            'location': location,
+            'date_str': hw_relative_to_date(date_relative),
+        })
+    return jobs
+
+def fetch_hellowork():
+    print('\n[HelloWork] Récupération des offres BTP/Immo...')
+    seen, jobs = set(), []
+
+    def fetch_sector_page(args):
+        sector, page = args
+        html_text = hw_fetch_page(sector, page)
+        time.sleep(0.4)
+        return hw_parse_jobs(html_text) if html_text else []
+
+    tasks = [(sector, page) for sector in HW_SECTORS for page in range(1, HW_MAX_PAGES + 1)]
+    with ThreadPoolExecutor(max_workers=4) as ex:
+        all_results = list(ex.map(fetch_sector_page, tasks))
+
+    excluded_kw = ['développeur', 'developer', 'data scientist', 'devops', 'ux designer',
+                   'ui designer', 'community manager', 'social media']
+
+    for results in all_results:
+        for r in results:
+            if r['jid'] in seen:
+                continue
+            seen.add(r['jid'])
+            if any(kw in normalize(r['title']) for kw in excluded_kw):
+                continue
+            jobs.append({
+                'id':           f'hw_{r["jid"]}',
+                'title':        r['title'],
+                'company':      r['company'],
+                'location':     _clean_location(r['location']),
+                'url':          f'https://www.hellowork.com/fr-fr/emplois/{r["jid"]}.html',
+                'source':       'HelloWork',
+                'date':         r['date_str'],
+                'days_old':     days_ago(r['date_str']),
+                'category':     classify_category(r['title']),
+                'size':         get_company_size(r['company']),
+                'is_recruiter': is_recruitment_firm(r['company']),
+                'description':  '',
+            })
+
+    print(f'  → {len(jobs)} offres HelloWork')
+    return jobs
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # UTILITAIRES
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -560,13 +691,15 @@ def main():
     print('=' * 60)
 
     # 1. Scraping (en parallèle)
-    with ThreadPoolExecutor(max_workers=2) as ex:
+    with ThreadPoolExecutor(max_workers=3) as ex:
         ft_future   = ex.submit(fetch_france_travail)
         apec_future = ex.submit(fetch_apec)
+        hw_future   = ex.submit(fetch_hellowork)
         ft_jobs     = ft_future.result()
         apec_jobs   = apec_future.result()
+        hw_jobs     = hw_future.result()
 
-    all_jobs = ft_jobs + apec_jobs
+    all_jobs = ft_jobs + apec_jobs + hw_jobs
 
     # 2. Dédoublonnage par titre + entreprise
     seen_keys = set()
