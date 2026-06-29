@@ -666,13 +666,31 @@ def load_crm_cache():
     except Exception:
         return {}
 
+COMPANY_NOISE_WORDS = {
+    'groupe', 'group', 'sas', 'sasu', 'sarl', 'sa', 'eurl', 'sci',
+    'holding', 'france', 'international', 'sas.', 'sarl.',
+}
+
+def strip_company_suffixes(name):
+    """Retire les mots génériques ('Groupe', 'SAS'...) pour matcher 'Groupe Snef' ↔ 'Snef'."""
+    words = [w for w in re.split(r'[\s\-]+', name) if w and w not in COMPANY_NOISE_WORDS]
+    return ' '.join(words).strip()
+
 def enrich_with_crm(jobs, crm):
     if not crm:
         return jobs
+
+    # Index secondaire : nom "nettoyé" (sans Groupe/SAS/etc.) → données CRM
+    crm_clean = {}
+    for crm_key, co_data in crm.items():
+        clean = strip_company_suffixes(crm_key)
+        if clean and clean not in crm_clean:
+            crm_clean[clean] = co_data
+
     enriched = 0
     for j in jobs:
         key = normalize(j['company'])
-        co  = crm.get(key)
+        co  = crm.get(key) or crm_clean.get(strip_company_suffixes(key))
         if co:
             j['crm_link']      = co.get('crm_link', '')
             j['crm_status']    = co.get('status', '')
