@@ -251,9 +251,9 @@ main {
 
 /* ── Jobs grid ────────────────────────────────────────────────── */
 #jobs-list {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
-  gap: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 /* ── Job card ─────────────────────────────────────────────────── */
@@ -261,8 +261,8 @@ main {
   background: #fff;
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 14px;
-  display: flex; gap: 12px;
+  padding: 10px 14px;
+  display: flex; gap: 14px; align-items: center;
   transition: box-shadow .15s, border-color .15s;
   position: relative;
   cursor: pointer;
@@ -284,29 +284,37 @@ main {
   flex-shrink: 0; text-transform: uppercase; overflow: hidden;
 }
 
-/* Corps de la carte */
-.jbody { flex: 1; min-width: 0; }
-.jtop { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+/* Corps de la carte — layout en ligne */
+.jbody { flex: 1; min-width: 0; display: flex; align-items: center; gap: 16px; }
+
+.jmain { flex: 0 0 320px; min-width: 0; }
 .jtitle {
   font-size: 13px; font-weight: 700; color: var(--txt);
-  line-height: 1.3; flex: 1;
+  line-height: 1.3; display: block;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .job-card:hover .jtitle { color: var(--orange); }
+.jco {
+  font-size: 12px; color: var(--txt2);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
 
-.jright { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex-shrink: 0; }
-.jdate { font-size: 11px; color: var(--txt3); }
+.jmeta { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; flex: 1; }
+.jcrm-inline { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
+
+.jright { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+.jdate { font-size: 11px; color: var(--txt3); white-space: nowrap; }
 .save-btn {
   font-size: 16px; color: var(--txt3); padding: 0;
   transition: color .15s, transform .15s;
 }
 .save-btn:hover, .save-btn.on { color: var(--orange); transform: scale(1.2); }
 
-.jco {
-  font-size: 12px; font-weight: 600; color: var(--txt2);
-  margin: 4px 0 6px; white-space: nowrap; overflow: hidden;
-  text-overflow: ellipsis;
+@media (max-width: 900px) {
+  .job-card { flex-wrap: wrap; }
+  .jbody { flex-wrap: wrap; }
+  .jmain { flex: 1 1 100%; }
 }
-.jmeta { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
 
 /* Badges */
 .badge {
@@ -742,7 +750,7 @@ function renderJobs(jobs) {
 
     var crmHtml = '';
     if (j.has_tc || j.has_open_job || j.is_client || j.consultant) {
-      crmHtml = '<div class="crm-indicators" style="margin-top:5px;">';
+      crmHtml = '<div class="jcrm-inline">';
       if (j.has_tc) crmHtml += '<div class="crm-dot tc" title="T&Cs signés"></div>';
       if (j.has_open_job) crmHtml += '<div class="crm-dot open-job" title="Job ouvert"></div>';
       if (j.crm_link) crmHtml += '<a class="crm-link" href="'+j.crm_link+'" target="_blank" onclick="event.stopPropagation()">CRM</a>';
@@ -753,21 +761,21 @@ function renderJobs(jobs) {
     return `<div class="${cardClass}" onclick="openJob('${escHtml(j.url)}')">
   <div class="co-logo">${initials}</div>
   <div class="jbody">
-    <div class="jtop">
+    <div class="jmain">
       <span class="jtitle">${escHtml(j.title)}</span>
-      <div class="jright">
-        <span class="jdate">${age}</span>
-        <button class="save-btn${saved?' on':''}" onclick="event.stopPropagation();toggleSave('${j.id}',this)" title="Sauvegarder">${saved?'♥':'♡'}</button>
-      </div>
+      <span class="jco">${escHtml(j.company || '—')}</span>
     </div>
-    <div class="jco">${escHtml(j.company || '—')}</div>
     <div class="jmeta">
       ${j.location ? '<span class="badge badge-loc">📍 '+escHtml(j.location)+'</span>' : ''}
       ${j.category ? '<span class="badge badge-cat">'+escHtml(j.category)+'</span>' : ''}
       ${j.size ? '<span class="badge badge-size">'+escHtml(j.size)+'</span>' : ''}
       <span class="badge badge-src ${srcClass}">${escHtml(j.source)}</span>
+      ${crmHtml}
     </div>
-    ${crmHtml}
+  </div>
+  <div class="jright">
+    <span class="jdate">${age}</span>
+    <button class="save-btn${saved?' on':''}" onclick="event.stopPropagation();toggleSave('${j.id}',this)" title="Sauvegarder">${saved?'♥':'♡'}</button>
   </div>
 </div>`;
   }).join('');
