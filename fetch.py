@@ -612,7 +612,7 @@ def enrich_with_logos(jobs):
 
     for j in jobs:
         domain = _domain_cache.get(normalize(j['company']))
-        j['logo'] = f'https://logo.clearbit.com/{domain}?size=64' if domain else ''
+        j['logo'] = f'https://www.google.com/s2/favicons?sz=128&domain={domain}' if domain else ''
     return jobs
 
 
