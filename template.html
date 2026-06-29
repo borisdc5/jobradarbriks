@@ -282,6 +282,11 @@ main {
   display: flex; align-items: center; justify-content: center;
   font-size: 14px; font-weight: 700; color: var(--purple);
   flex-shrink: 0; text-transform: uppercase; overflow: hidden;
+  position: relative;
+}
+.co-logo img {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  object-fit: contain; background: #fff; padding: 5px;
 }
 
 /* Corps de la carte — layout en ligne */
@@ -744,6 +749,7 @@ function renderJobs(jobs) {
   list.innerHTML = jobs.map(j => {
     var saved = savedIds.has(j.id);
     var initials = (j.company || '??').split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();
+    var logoImg = j.logo ? `<img src="${escHtml(j.logo)}" alt="" loading="lazy" onerror="this.remove()">` : '';
     var age = j.days_old <= 1 ? 'Aujourd\'hui' : j.days_old === 2 ? 'Hier' : j.days_old + ' j';
     var srcClass = srcBadgeClass(j.source);
     var cardClass = 'job-card' + (saved ? ' saved' : '') + (j.is_client ? ' is-client' : j.is_recruiter ? ' is-recruiter' : '');
@@ -759,7 +765,7 @@ function renderJobs(jobs) {
     }
 
     return `<div class="${cardClass}" onclick="openJob('${escHtml(j.url)}')">
-  <div class="co-logo">${initials}</div>
+  <div class="co-logo">${logoImg}<span>${initials}</span></div>
   <div class="jbody">
     <div class="jmain">
       <span class="jtitle">${escHtml(j.title)}</span>

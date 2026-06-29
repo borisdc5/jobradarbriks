@@ -572,6 +572,51 @@ def fetch_hellowork():
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# LOGOS ENTREPRISES (via Clearbit autocomplete — gratuit, sans clé)
+# ─────────────────────────────────────────────────────────────────────────────
+
+_domain_cache = {}
+
+def get_company_domain(company):
+    key = normalize(company)
+    if not key:
+        return None
+    if key in _domain_cache:
+        return _domain_cache[key]
+    domain = None
+    try:
+        url = ('https://autocomplete.clearbit.com/v1/companies/suggest?' +
+               urllib.parse.urlencode({'query': company}))
+        req = urllib.request.Request(url)
+        resp = urllib.request.urlopen(req, context=ctx, timeout=6)
+        data = json.loads(resp.read())
+        if data:
+            domain = data[0].get('domain')
+    except Exception:
+        domain = None
+    _domain_cache[key] = domain
+    return domain
+
+def enrich_with_logos(jobs):
+    companies = {}
+    for j in jobs:
+        key = normalize(j['company'])
+        if key and key not in companies:
+            companies[key] = j['company']
+
+    with ThreadPoolExecutor(max_workers=10) as ex:
+        list(ex.map(get_company_domain, companies.values()))
+
+    found = sum(1 for v in _domain_cache.values() if v)
+    print(f'  {found}/{len(companies)} logos résolus')
+
+    for j in jobs:
+        domain = _domain_cache.get(normalize(j['company']))
+        j['logo'] = f'https://logo.clearbit.com/{domain}?size=64' if domain else ''
+    return jobs
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # UTILITAIRES
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -716,6 +761,10 @@ def main():
     crm = load_crm_cache()
     print(f'  {len(crm)} entreprises en cache')
     deduped = enrich_with_crm(deduped, crm)
+
+    # 3b. Logos entreprises
+    print('\n[Logos] Résolution des domaines entreprises...')
+    deduped = enrich_with_logos(deduped)
 
     # 4. Tri : T&Cs d'abord, puis par date
     deduped.sort(key=lambda j: (
