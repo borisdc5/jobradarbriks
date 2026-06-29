@@ -577,6 +577,15 @@ def fetch_hellowork():
 
 _domain_cache = {}
 
+def _domain_matches_company(domain, company_clean_words):
+    """Vérifie qu'au moins un mot significatif du nom apparaît dans le domaine
+    (évite les faux positifs de la base Clearbit, ex: 'Groupe Snef' → 'clid.fr')."""
+    domain_part = domain.lower().split('.')[0].replace('-', '')
+    for w in company_clean_words:
+        if len(w) >= 4 and w in domain_part:
+            return True
+    return False
+
 def get_company_domain(company):
     key = normalize(company)
     if not key:
@@ -591,7 +600,10 @@ def get_company_domain(company):
         resp = urllib.request.urlopen(req, context=ctx, timeout=6)
         data = json.loads(resp.read())
         if data:
-            domain = data[0].get('domain')
+            candidate = data[0].get('domain')
+            clean_words = strip_company_suffixes(key).split()
+            if candidate and _domain_matches_company(candidate, clean_words):
+                domain = candidate
     except Exception:
         domain = None
     _domain_cache[key] = domain
