@@ -1,6 +1,7 @@
 """
 JobRadar Briks — Agrégateur d'offres immobilier / construction / BTP
-Scrape France Travail + APEC, enrichit via RecruitCRM, génère docs/index.html
+Scrape France Travail + APEC + HelloWork + PMEBTP + Batiactu,
+enrichit via RecruitCRM, génère docs/index.html
 """
 import urllib.request, urllib.parse, ssl, json, re, os, gzip, time
 from datetime import datetime, timezone, timedelta
@@ -634,6 +635,167 @@ def fetch_hellowork():
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# PMEBTP (listes HTML paginées)
+# ─────────────────────────────────────────────────────────────────────────────
+
+PMEBTP_MAX_PAGES = 6
+
+def _strip_tags(value):
+    value = re.sub(r'<[^>]+>', ' ', value or '')
+    return re.sub(r'\s+', ' ', _html_mod.unescape(value)).strip()
+
+def _relative_date(text):
+    text = normalize(text)
+    if 'aujourd' in text or re.search(r'\d+\s*(?:heure|minute)', text):
+        return NOW.strftime('%Y-%m-%d')
+    if 'hier' in text:
+        return (NOW - timedelta(days=1)).strftime('%Y-%m-%d')
+    match = re.search(r'(\d+)\s*jour', text)
+    if match:
+        return (NOW - timedelta(days=int(match.group(1)))).strftime('%Y-%m-%d')
+    match = re.search(r'(\d+)\s*semaine', text)
+    if match:
+        return (NOW - timedelta(weeks=int(match.group(1)))).strftime('%Y-%m-%d')
+    match = re.search(r'(\d+)\s*mois', text)
+    if match:
+        return (NOW - timedelta(days=30 * int(match.group(1)))).strftime('%Y-%m-%d')
+    return NOW.strftime('%Y-%m-%d')
+
+def pmebtp_fetch_page(page):
+    url = 'https://www.pmebtp.com/espace-emploi' + (f'/page{page}' if page > 1 else '')
+    req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+    try:
+        return urllib.request.urlopen(req, context=ctx, timeout=30).read().decode('utf-8', 'replace')
+    except Exception as exc:
+        print(f'  [PMEBTP] Page {page} error: {exc}')
+        return ''
+
+def pmebtp_parse_jobs(html_text):
+    jobs = []
+    pattern = re.compile(
+        r'class="btp_content_espace_emploi_list_line_td_list_info_entreprise"[^>]*>(.*?)</b>.*?'
+        r'class="btp_content_espace_emploi_list_line_td_list_info_poste"[^>]*>\s*'
+        r'<a[^>]+href="(https://www\.pmebtp\.com/emploi/(\d+)/[^"]+)"[^>]*>(.*?)</a>.*?'
+        r'class="btp_content_espace_emploi_list_line_td_list_info_lieu"[^>]*>(.*?)<span.*?'
+        r'class="btp_content_espace_emploi_list_line_td_list_info_statut"[^>]*>(.*?)</div>.*?'
+        r'class="btp_content_espace_emploi_list_line_td_list_date"[^>]*>(.*?)</div>',
+        re.S,
+    )
+    for match in pattern.finditer(html_text):
+        company, url, jid, title, location, contract, date_text = match.groups()
+        if 'CDI' not in _strip_tags(contract).upper():
+            continue
+        jobs.append({
+            'jid': jid, 'title': _strip_tags(title), 'company': _strip_tags(company),
+            'location': _strip_tags(location), 'url': url,
+            'date_str': _relative_date(_strip_tags(date_text)),
+        })
+    return jobs
+
+def fetch_pmebtp():
+    print('\n[PMEBTP] Récupération des offres CDI...')
+    with ThreadPoolExecutor(max_workers=4) as ex:
+        pages = list(ex.map(pmebtp_fetch_page, range(1, PMEBTP_MAX_PAGES + 1)))
+    seen, jobs = set(), []
+    for html_text in pages:
+        for row in pmebtp_parse_jobs(html_text):
+            if row['jid'] in seen:
+                continue
+            seen.add(row['jid'])
+            jobs.append({
+                'id': f'pmebtp_{row["jid"]}', 'title': row['title'],
+                'company': row['company'], 'location': _clean_location(row['location']),
+                'url': row['url'], 'source': 'PMEBTP', 'date': row['date_str'],
+                'days_old': days_ago(row['date_str']),
+                'category': classify_category(row['title']),
+                'size': get_company_size(row['company']),
+                'is_recruiter': is_recruitment_firm(row['company']), 'description': '',
+            })
+    print(f'  → {len(jobs)} offres PMEBTP')
+    return jobs
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# BATIACTU (pages métier/fonction réellement paginées, pas les 6 cartes accueil)
+# ─────────────────────────────────────────────────────────────────────────────
+
+BATIACTU_PATHS = [
+    'fonction/metiers-de-l-immobilier',
+    'metier/responsable-conducteur-de-travaux',
+    'metier/responsable-chef-de-chantier',
+    'metier/ingenieur-technicien-etudes',
+    'metier/charge-d-affaires',
+    'metier/directeur-responsable-de-programmes-immobiliers',
+]
+BATIACTU_MAX_PAGES = 3
+
+def batiactu_fetch_page(task):
+    path, page = task
+    url = f'https://emploi.batiactu.com/offre-emploi-BTP/{path}'
+    if page > 1:
+        url += f'?page={page}'
+    req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+    try:
+        return urllib.request.urlopen(req, context=ctx, timeout=30).read().decode('utf-8', 'replace')
+    except Exception as exc:
+        print(f'  [Batiactu] {path} page {page} error: {exc}')
+        return ''
+
+def _batiactu_company(url, title):
+    slug = url.rsplit('/', 1)[-1]
+    slug = re.sub(r'-[^-]+-\d+\.php$', '', slug)
+    title_words = [w for w in re.findall(r'[a-z0-9]+', normalize(title)) if len(w) >= 4]
+    indexes = [slug.find('-' + word) for word in title_words if slug.find('-' + word) > 0]
+    company_slug = slug[:min(indexes)] if indexes else slug.split('-', 1)[0]
+    return company_slug.replace('-', ' ').strip().title() or 'Employeur confidentiel'
+
+def batiactu_parse_jobs(html_text):
+    jobs = []
+    for block in re.split(r'(?=<div class="job-block")', html_text)[1:]:
+        anchor = re.search(r'<a class="bati-title" href="([^"]+)">(.*?)</a>', block, re.S)
+        if not anchor:
+            continue
+        url, title = anchor.group(1), _strip_tags(anchor.group(2))
+        jid_match = re.search(r'-(\d+)\.php(?:\?|$)', url)
+        info = [_strip_tags(item) for item in re.findall(r'<li><span class="icon [^"]+"></span>(.*?)</li>', block, re.S)]
+        contract = _strip_tags((re.search(r'<li class="time">(.*?)</li>', block, re.S) or ['', ''])[1])
+        if not jid_match or 'CDI' not in contract.upper() or len(info) < 3:
+            continue
+        description_match = re.search(r'<div class="chapeau">(.*?)</div>', block, re.S)
+        jobs.append({
+            'jid': jid_match.group(1), 'title': title,
+            'company': _batiactu_company(url, title), 'location': info[1],
+            'date_str': _relative_date(info[2]), 'url': url,
+            'description': _strip_tags(description_match.group(1)) if description_match else '',
+        })
+    return jobs
+
+def fetch_batiactu():
+    print('\n[Batiactu] Récupération des offres CDI paginées...')
+    tasks = [(path, page) for path in BATIACTU_PATHS for page in range(1, BATIACTU_MAX_PAGES + 1)]
+    with ThreadPoolExecutor(max_workers=6) as ex:
+        pages = list(ex.map(batiactu_fetch_page, tasks))
+    seen, jobs = set(), []
+    for html_text in pages:
+        for row in batiactu_parse_jobs(html_text):
+            if row['jid'] in seen:
+                continue
+            seen.add(row['jid'])
+            jobs.append({
+                'id': f'batiactu_{row["jid"]}', 'title': row['title'],
+                'company': row['company'], 'location': _clean_location(row['location']),
+                'url': row['url'], 'source': 'Batiactu', 'date': row['date_str'],
+                'days_old': days_ago(row['date_str']),
+                'category': classify_category(row['title'], row['description']),
+                'size': get_company_size(row['company']),
+                'is_recruiter': is_recruitment_firm(row['company']),
+                'description': row['description'][:300],
+            })
+    print(f'  → {len(jobs)} offres Batiactu')
+    return jobs
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # LOGOS ENTREPRISES (via Clearbit autocomplete — gratuit, sans clé)
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -832,25 +994,31 @@ def main():
     print('=' * 60)
 
     # 1. Scraping (en parallèle)
-    with ThreadPoolExecutor(max_workers=3) as ex:
+    with ThreadPoolExecutor(max_workers=5) as ex:
         ft_future   = ex.submit(fetch_france_travail)
         apec_future = ex.submit(fetch_apec)
         hw_future   = ex.submit(fetch_hellowork)
+        pme_future  = ex.submit(fetch_pmebtp)
+        bati_future = ex.submit(fetch_batiactu)
         ft_jobs     = ft_future.result()
         apec_jobs   = apec_future.result()
         hw_jobs     = hw_future.result()
+        pme_jobs    = pme_future.result()
+        bati_jobs   = bati_future.result()
 
     source_counts = {
         'France Travail': len(ft_jobs),
         'APEC': len(apec_jobs),
         'HelloWork': len(hw_jobs),
+        'PMEBTP': len(pme_jobs),
+        'Batiactu': len(bati_jobs),
     }
     print('\n[Sources] ' + ' | '.join(f'{name}: {count}' for name, count in source_counts.items()))
 
-    all_jobs = ft_jobs + apec_jobs + hw_jobs
+    all_jobs = ft_jobs + apec_jobs + hw_jobs + pme_jobs + bati_jobs
     if not all_jobs:
         raise RuntimeError(
-            'Aucune offre récupérée sur les 3 sources. Le workflow est arrêté '
+            'Aucune offre récupérée sur les 5 sources. Le workflow est arrêté '
             'pour éviter un faux succès et un site vide.'
         )
 
@@ -886,4 +1054,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
