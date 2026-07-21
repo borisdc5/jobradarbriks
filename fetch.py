@@ -571,7 +571,7 @@ def hw_relative_to_date(text):
 def hw_fetch_page(sector, page):
     params = {
         'k': '', 'l': '', 'c': 'CDI', 'd': 'all',
-        'et': 'Entreprises', 's': sector, 'p': page,
+        'et': 'Entreprises', 's': sector, 'st': 'date', 'p': page,
     }
     url = 'https://www.hellowork.com/fr-fr/emploi/recherche.html?' + urllib.parse.urlencode(params)
     req = urllib.request.Request(url)
@@ -829,7 +829,7 @@ BATIACTU_PATHS = [
     'metier/charge-d-affaires',
     'metier/directeur-responsable-de-programmes-immobiliers',
 ]
-BATIACTU_MAX_PAGES = 3
+BATIACTU_MAX_PAGES = 10  # Batiactu mélange les dates entre les pages
 
 def batiactu_fetch_page(task):
     path, page = task
