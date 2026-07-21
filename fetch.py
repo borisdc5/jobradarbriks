@@ -17,6 +17,7 @@ BASE_DIR  = os.path.dirname(os.path.abspath(__file__))
 OUT       = os.path.join(BASE_DIR, 'docs', 'index.html')
 TEMPLATE  = os.path.join(BASE_DIR, 'template.html')
 CRM_CACHE = os.path.join(BASE_DIR, 'crm_cache.json')
+HW_SIZE_CACHE = os.path.join(BASE_DIR, 'hellowork_sizes.json')
 
 # ── SSL context (permissif pour les APIs FR) ──────────────────────────────────
 ctx = ssl.create_default_context()
@@ -542,7 +543,7 @@ def fetch_apec():
 import html as _html_mod
 
 HW_SECTORS = ['BTP', 'Immo']  # codes secteurs HelloWork
-HW_MAX_PAGES = 5              # ~30 offres/page → jusqu'à 150 offres/secteur
+HW_MAX_PAGES = 10             # ~30 offres/page → jusqu'à 300 offres/secteur
 
 def hw_relative_to_date(text):
     """Convertit 'il y a 14 heures' / 'il y a 3 jours' / 'Aujourd'hui' en date ISO."""
@@ -622,6 +623,75 @@ def hw_parse_jobs(html_text):
         })
     return jobs
 
+def _load_hw_size_cache():
+    try:
+        with open(HW_SIZE_CACHE, encoding='utf-8') as f:
+            data = json.load(f)
+        return data.get('companies', {})
+    except Exception:
+        return {}
+
+def _employee_count_to_size(count):
+    if count <= 10:
+        return '≤10'
+    if count <= 50:
+        return '11-50'
+    if count <= 200:
+        return '51-200'
+    if count <= 1000:
+        return '201-1k'
+    if count <= 5000:
+        return '1k-5k'
+    return '5k+'
+
+def _hw_fetch_company_size(job):
+    """Suit une offre vers la page entreprise, puis lit « N collaborateurs »."""
+    headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
+    try:
+        detail_req = urllib.request.Request(job['url'], headers=headers)
+        detail = urllib.request.urlopen(detail_req, context=ctx, timeout=20).read().decode('utf-8', 'replace')
+        company_link = re.search(r'href="(/fr-fr/entreprises/[^"?#]+\.html)"', detail, re.I)
+        if not company_link:
+            return ''
+        company_url = urllib.parse.urljoin('https://www.hellowork.com', _html_mod.unescape(company_link.group(1)))
+        company_req = urllib.request.Request(company_url, headers=headers)
+        company_html = urllib.request.urlopen(company_req, context=ctx, timeout=20).read().decode('utf-8', 'replace')
+        # Formulations observées : « 980 collaborateurs », « 1 200 salariés ».
+        counts = []
+        for value in re.findall(r'(?<!\d)(\d{1,3}(?:[ .]\d{3})*)\s+(?:collaborateurs?|salari[ée]s?|employ[ée]s?)\b', company_html, re.I):
+            count = int(re.sub(r'\D', '', value))
+            if 1 <= count <= 1_000_000:
+                counts.append(count)
+        return _employee_count_to_size(max(counts)) if counts else ''
+    except Exception:
+        return ''
+
+def enrich_hellowork_sizes(jobs):
+    cache = _load_hw_size_cache()
+    representatives = {}
+    for job in jobs:
+        key = normalize(job['company'])
+        if job.get('size'):
+            cache[key] = job['size']
+        elif key and key not in cache and key not in representatives:
+            representatives[key] = job
+
+    if representatives:
+        items = list(representatives.items())
+        with ThreadPoolExecutor(max_workers=8) as ex:
+            sizes = list(ex.map(lambda item: _hw_fetch_company_size(item[1]), items))
+        for (key, _), size in zip(items, sizes):
+            cache[key] = size
+
+    for job in jobs:
+        job['size'] = cache.get(normalize(job['company']), job.get('size', ''))
+
+    with open(HW_SIZE_CACHE, 'w', encoding='utf-8') as f:
+        json.dump({'updated': NOW.isoformat(), 'companies': cache}, f, ensure_ascii=False, indent=2)
+    found = sum(bool(job.get('size')) for job in jobs)
+    print(f'  Tailles HelloWork : {found}/{len(jobs)} offres renseignées')
+    return jobs
+
 def fetch_hellowork():
     print('\n[HelloWork] Récupération des offres BTP/Immo...')
     seen, jobs = set(), []
@@ -658,6 +728,7 @@ def fetch_hellowork():
                 'description':  '',
             })
 
+    jobs = enrich_hellowork_sizes(jobs)
     print(f'  → {len(jobs)} offres HelloWork')
     return jobs
 
@@ -1064,6 +1135,20 @@ def main():
             seen_keys.add(key)
             deduped.append(j)
     print(f'\nTotal après dédup : {len(deduped)} offres (sur {len(all_jobs)} brutes)')
+
+    # 2b. Diversité : conserver au maximum les 3 offres les plus récentes
+    # d'une même entreprise, toutes sources confondues.
+    deduped.sort(key=lambda job: job.get('days_old', 999))
+    company_counts, diversified = {}, []
+    for job in deduped:
+        company_key = strip_company_suffixes(normalize(job['company'])) or normalize(job['company'])
+        if company_counts.get(company_key, 0) >= 3:
+            continue
+        company_counts[company_key] = company_counts.get(company_key, 0) + 1
+        diversified.append(job)
+    removed = len(deduped) - len(diversified)
+    deduped = diversified
+    print(f'Diversification : {len(deduped)} offres conservées, {removed} retirées (max. 3/entreprise)')
 
     # 3. CRM enrichissement
     print('\n[CRM] Chargement du cache RecruitCRM...')
