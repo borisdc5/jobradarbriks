@@ -500,12 +500,13 @@ main {
       <div class="filter-section">
         <h4>Taille entreprise</h4>
         <div class="filter-pills">
-          <div class="pill" onclick="toggleFilter('size','≤10',this)">≤10</div>
-          <div class="pill" onclick="toggleFilter('size','11–50',this)">11–50</div>
-          <div class="pill" onclick="toggleFilter('size','51–200',this)">51–200</div>
-          <div class="pill" onclick="toggleFilter('size','201–1k',this)">201–1k</div>
-          <div class="pill" onclick="toggleFilter('size','1k–5k',this)">1k–5k</div>
-          <div class="pill" onclick="toggleFilter('size','5k+',this)">5k+</div>
+          <div class="pill" data-size="≤10" onclick="toggleFilter('size','≤10',this)">≤10</div>
+          <div class="pill" data-size="11-50" onclick="toggleFilter('size','11-50',this)">11–50</div>
+          <div class="pill" data-size="51-200" onclick="toggleFilter('size','51-200',this)">51–200</div>
+          <div class="pill" data-size="201-1k" onclick="toggleFilter('size','201-1k',this)">201–1k</div>
+          <div class="pill" data-size="1k-5k" onclick="toggleFilter('size','1k-5k',this)">1k–5k</div>
+          <div class="pill" data-size="5k+" onclick="toggleFilter('size','5k+',this)">5k+</div>
+          <div class="pill" data-size="unknown" onclick="toggleFilter('size','unknown',this)">Non renseignée</div>
         </div>
       </div>
 
@@ -654,7 +655,7 @@ function updateChips() {
   filters.cat.forEach(v => add(v, "removeFilter('cat','"+v+"')"));
   filters.loc.forEach(v => add(v, "removeFilter('loc','"+v+"')"));
   filters.src.forEach(v => add(v, "removeFilter('src','"+v+"')"));
-  filters.size.forEach(v => add(v, "removeFilter('size','"+v+"')"));
+  filters.size.forEach(v => add(v === 'unknown' ? 'Non renseignée' : v, "removeFilter('size','"+v+"')"));
   filters.crm.forEach(v => add(crmLabel(v), "removeFilter('crm','"+v+"')"));
   if (filters.age) add('≤ '+filters.age+' j', "removeFilter('age',null)");
   if (filters.recruiter) add(filters.recruiter === 'hide' ? 'Sans cabinets' : 'Cabinets seuls', "removeFilter('recruiter',null)");
@@ -701,7 +702,7 @@ function applyFilters() {
     if (filters.loc.size && !locMatch(j.location, filters.loc)) return false;
     if (filters.src.size && !filters.src.has(j.source)) return false;
     if (filters.age && (j.days_old || 999) > filters.age) return false;
-    if (filters.size.size && !filters.size.has(j.size)) return false;
+    if (filters.size.size && !filters.size.has(j.size) && !(filters.size.has('unknown') && !j.size)) return false;
     if (filters.crm.size) {
       var ok = false;
       if (filters.crm.has('tc') && j.has_tc) ok = true;
@@ -827,6 +828,12 @@ function initApp() {
   document.getElementById('meta-date').textContent = META.updated || '—';
   document.getElementById('meta-total').textContent = JOBS.length;
   document.getElementById('saved-count').textContent = savedIds.size;
+  document.querySelectorAll('[data-size]').forEach(el => {
+    var value = el.dataset.size;
+    var count = JOBS.filter(j => value === 'unknown' ? !j.size : j.size === value).length;
+    if (!count) el.style.display = 'none';
+    else el.textContent += ' (' + count + ')';
+  });
   applyFilters();
 }
 

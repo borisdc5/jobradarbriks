@@ -253,7 +253,20 @@ def is_recruitment_firm(company):
     return any(firm in co for firm in RECRUITMENT_FIRMS)
 
 def get_company_size(company):
-    return COMPANY_SIZES.get(normalize(company), '')
+    company_norm = normalize(company)
+    exact = COMPANY_SIZES.get(company_norm)
+    if exact:
+        return exact
+    # Les jobboards ajoutent souvent une activité, une agence ou une forme
+    # juridique au nom connu (ex. « Vinci Construction Terrassement »).
+    padded_company = f' {company_norm} '
+    aliases = [
+        (known, size) for known, size in COMPANY_SIZES.items()
+        if len(known) >= 4 and f' {known} ' in padded_company
+    ]
+    if aliases:
+        return max(aliases, key=lambda item: len(item[0]))[1]
+    return ''
 
 def days_ago(date_str):
     """Retourne l'ancienneté en jours depuis date_str (ISO ou YYYY-MM-DD)."""
