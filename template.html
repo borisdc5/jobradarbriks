@@ -397,10 +397,13 @@ main {
       <span>BRIKS</span>
     </div>
     <h2>JobRadar — Accès privé</h2>
+    <input type="email" id="email-input" placeholder="Adresse e-mail Briks"
+           autocomplete="email">
     <input type="password" id="pwd-input" placeholder="Mot de passe"
+           autocomplete="current-password"
            onkeydown="if(event.key==='Enter')tryLogin()">
     <button class="login-btn" onclick="tryLogin()">Accéder</button>
-    <div class="login-error" id="login-error">Mot de passe incorrect</div>
+    <div class="login-error" id="login-error">E-mail non autorisé ou mot de passe incorrect</div>
   </div>
 </div>
 
@@ -575,7 +578,18 @@ main {
 // AUTH
 // ══════════════════════════════════════════════════════════════
 var _ak = 'briks_jr_auth_v1';
+var _emailKey = 'briks_jr_email_v1';
 var _ex = 'QnJpa3M5OTkh'; // btoa("Briks999!")
+var _allowedEmailHashes = new Set([
+  'c409d74605050e93712455ed899cc09642a9c7c16dc0984e28cb20b49b7fd19f',
+  '877c71b42e1831302d308782dc56a6a8e622f6eff07a392b684e8565baddd0a7'
+]);
+
+async function _hashEmail(email) {
+  var bytes = new TextEncoder().encode(email);
+  var digest = await crypto.subtle.digest('SHA-256', bytes);
+  return Array.from(new Uint8Array(digest)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
 
 function _initAuth() {
   var ov = document.getElementById('login-overlay');
@@ -588,11 +602,14 @@ function _initAuth() {
   ov.style.display = 'flex';
 }
 
-function tryLogin() {
+async function tryLogin() {
+  var email = (document.getElementById('email-input').value || '').trim().toLowerCase();
+  var emailHash = await _hashEmail(email);
   var v = document.getElementById('pwd-input').value;
   var err = document.getElementById('login-error');
-  if (btoa(v) === _ex) {
+  if (_allowedEmailHashes.has(emailHash) && btoa(v) === _ex) {
     localStorage.setItem(_ak, _ex);
+    localStorage.setItem(_emailKey, email);
     document.getElementById('login-overlay').style.display = 'none';
     document.getElementById('app').style.display = 'block';
     initApp();
