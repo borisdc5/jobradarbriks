@@ -31,72 +31,87 @@ NOW = datetime.now(timezone.utc)
 
 # Mots-clés → catégorie (ordre = priorité)
 CATEGORY_RULES = [
-    ('Promotion Immobilière', [
+    ('Promotion / Aménagement / Foncier', [
         'directeur de programmes', 'responsable programmes', 'chargé de programmes',
         'chargé de programme', 'directeur programme', 'chef de projet immobilier',
         'montage d\'opération', 'développeur immobilier', 'développement immobilier',
         'promoteur', 'promotion immobilière', 'responsable opérations',
-        'chargé d\'opérations', 'aménageur', 'lotissement',
+        'chargé d\'opérations', 'aménageur', 'lotissement', 'responsable foncier',
+        'chargé de foncier', 'développement foncier', 'acquisition foncière',
+        'prospection foncière', 'développeur foncier',
     ]),
-    ('Transaction / Vente', [
+    ('Transaction / Commercialisation Immo', [
         'négociateur immobilier', 'agent immobilier', 'conseiller immobilier',
         'consultant immobilier', 'transaction immobilière', 'commercialisation immobilière',
         'commercial immobilier', 'vente immobilier', 'conseiller de vente immobilier',
-        'agent commercial immobilier',
+        'agent commercial immobilier', 'vente vefa', 'commercialisation vefa',
+        'location immobilière', 'conseiller location',
     ]),
-    ('Asset & Property Management', [
+    ('Gestion Immobilière', [
         'asset manager', 'asset management', 'property manager', 'property management',
         'facility manager', 'facility management', 'gestionnaire de patrimoine',
         'gestionnaire d\'actifs', 'gestion locative', 'administrateur de biens',
         'gestionnaire immobilier', 'responsable patrimoine', 'exploitation immobilière',
-        'gérant d\'immeuble', 'directeur patrimoine', 'directeur immobilier',
-    ]),
-    ('Expertise / Évaluation', [
-        'expert immobilier', 'évaluateur immobilier', 'expertise immobilière',
-        'évaluation immobilière', 'estimation immobilière', 'expert en évaluation',
-        'certificateur', 'diagnostiqueur', 'expert technique',
+        'gérant d\'immeuble', 'directeur patrimoine', 'directeur immobilier', 'syndic',
+        'copropriété', 'copropriet', 'gardien d\'immeuble',
     ]),
     ('Architecture & Urbanisme', [
         'architecte', 'architecte d\'intérieur', 'urbaniste', 'aménagement urbain',
-        'paysagiste', 'concepteur', 'architecture', 'urbanisme',
+        'paysagiste concepteur', 'architecture', 'urbanisme', 'bim manager',
         'aménagement du territoire', 'chef de projet architecture',
     ]),
-    ('Maîtrise d\'Œuvre', [
+    ('MOA / MOE / Pilotage', [
         'maître d\'œuvre', 'maîtrise d\'œuvre', 'moe ', ' moe', 'maîtrise d\'ouvrage',
         'moa ', ' moa', 'amo ', ' amo', 'conducteur d\'opération',
         'assistant maître d\'ouvrage', 'assistant à maîtrise d\'ouvrage',
-        'chargé de maîtrise d\'œuvre',
+        'chargé de maîtrise d\'œuvre', 'pilote opc', 'coordinateur opc',
     ]),
-    ('Bureau d\'Études / Ingénierie', [
+    ('Études / Ingénierie / Économie', [
         'bureau d\'études', 'ingénieur structure', 'ingénieur béton', 'ingénieur génie civil',
         'ingénieur fluides', 'ingénieur cvc', 'ingénieur thermique', 'ingénieur acoustique',
         'ingénieur vrd', 'vrd', 'géotechnique', 'topographe', 'économiste de la construction',
         'métreur', 'opc', 'chargé d\'études techniques', 'ingénieur calcul',
-        'ingénieur bâtiment', 'responsable bureau d\'études',
+        'ingénieur bâtiment', 'responsable bureau d\'études', 'dessinateur projeteur',
+        'dessinateur-projeteur', 'projeteur', 'chargé d\'études', 'chargé etudes',
+        'diagnostiqueur', 'expert immobilier', 'expert bâtiment', 'expert construction',
+        'études de prix', 'etudes de prix', 'ingénieur études', 'ingenieur etudes',
+        'ingénieur géomètre', 'ingenieur geometre', 'géomètre', 'geometre',
+        'économiste', 'economiste', 'metreur', 'chargé de méthodes',
     ]),
-    ('Conduite de Travaux', [
+    ('Travaux / Chantier', [
         'conducteur de travaux', 'chef de chantier', 'directeur de travaux',
         'ingénieur travaux', 'gros œuvre', 'responsable de chantier',
         'chef de projet travaux', 'responsable travaux', 'directeur de chantier',
-        'coordinateur travaux', 'technicien travaux',
+        'coordinateur travaux', 'technicien travaux', 'chef d\'équipe', 'chef equipe',
+        'conducteur travaux', 'conducteurs de travaux', 'conducteur-trice de travaux',
+        'préparateur de travaux', 'preparateur de travaux',
     ]),
-    ('Commercial / Foncier', [
-        'responsable foncier', 'chargé de foncier', 'développement foncier',
-        'acquisition foncière', 'foncier', 'chargé d\'affaires btp',
-        'chargé d\'affaires immobilier', 'business developer immobilier',
-        'responsable développement', 'prospection foncière',
+    ('Commerce BTP / Affaires', [
+        'chargé d\'affaires', 'charge d\'affaires', 'chargée d\'affaires',
+        'technico-commercial', 'technico commercial', 'commercial btp',
+        'commercial terrain', 'responsable commercial', 'développement commercial',
+        'business developer btp', 'conseiller commercial maisons',
     ]),
-    ('Juridique & Finance Immo', [
-        'juriste immobilier', 'droit immobilier', 'droit de la construction',
-        'notaire', 'investissement immobilier', 'financement immobilier',
-        'analyste immobilier', 'contrôleur de gestion immobilier',
-        'daf immobilier', 'finance immobilier', 'scpi', 'opci',
-        'responsable financier immobilier',
+    ('Métiers techniques / Maintenance', [
+        'technicien de maintenance', 'technicien maintenance', 'agent de maintenance',
+        'responsable maintenance', 'électricien', 'electricien', 'plombier', 'chauffagiste',
+        'frigoriste', 'climaticien', 'cvc', 'menuisier', 'charpentier', 'couvreur',
+        'zingueur', 'maçon', 'macon', 'peintre en bâtiment', 'peintre en batiment',
+        'plaquiste', 'carreleur', 'étancheur', 'etancheur', 'serrurier', 'métallier',
+        'metallier', 'soudeur', 'terrassier', 'canalisateur', 'grutier', 'monteur',
+        'poseur', 'installateur', 'ouvrier', 'opérateur', 'operateur', 'électromécanicien',
+        'electromecanicien', 'automaticien', 'ascensoriste', 'cordiste',
+        'technicien', 'mécanicien', 'mecanicien', 'bardeur', 'magasinier',
+        'chef d\'atelier', 'chef atelier', 'directeur technique', 'courants faibles',
+        'thermique', 'génie climatique', 'genie climatique', 'façadier', 'facadier',
+        'menuiserie', 'charpente', 'couverture', 'toiture', 'échafaud', 'echafaud',
     ]),
-    ('Support & Admin', [
-        'assistant immobilier', 'assistante immobilier', 'coordinateur',
-        'office manager', 'secrétaire', 'comptable immobilier',
-        'ressources humaines', 'rh', 'administration',
+    ('Fonctions support', [
+        'juriste', 'notaire', 'analyste immobilier', 'contrôleur de gestion',
+        'responsable financier', 'acheteur', 'comptable', 'assistant immobilier',
+        'assistante immobilier', 'office manager', 'secrétaire', 'ressources humaines',
+        'assistant administratif', 'assistante administrative', 'responsable administratif',
+        'assistant(e)', 'assistante', 'assistant ', 'gestionnaire administratif',
     ]),
 ]
 
@@ -721,6 +736,9 @@ def fetch_pmebtp():
 
 BATIACTU_PATHS = [
     'fonction/metiers-de-l-immobilier',
+    'metier/agent-immobilier',
+    'metier/gestionnaire-de-biens-immobiliers',
+    'metier/gestionnaire-syndic-de-co-propriete',
     'metier/responsable-conducteur-de-travaux',
     'metier/responsable-chef-de-chantier',
     'metier/ingenieur-technicien-etudes',
@@ -940,6 +958,7 @@ def enrich_with_crm(jobs, crm):
             j['consultant']    = co.get('consultant', '')
             j['updated_by']    = co.get('updated_by', '')
             j['updated_on']    = co.get('updated_on', '')
+            j['is_prospect']   = bool(j['crm_link']) and not j['has_tc']
             enriched += 1
         else:
             j['crm_link']     = ''
@@ -950,6 +969,7 @@ def enrich_with_crm(jobs, crm):
             j['consultant']   = ''
             j['updated_by']   = ''
             j['updated_on']   = ''
+            j['is_prospect']  = False
     print(f'  CRM enrichissement : {enriched}/{len(jobs)} entreprises matchées')
     return jobs
 

@@ -435,17 +435,16 @@ main {
       <div class="filter-section">
         <h4>Catégorie</h4>
         <div class="filter-pills" id="cat-pills">
-          <div class="pill cat" onclick="toggleFilter('cat','Promotion Immobilière',this)">Promotion Immo</div>
-          <div class="pill cat" onclick="toggleFilter('cat','Transaction / Vente',this)">Transaction / Vente</div>
-          <div class="pill cat" onclick="toggleFilter('cat','Asset & Property Management',this)">Asset & Property Mgt</div>
-          <div class="pill cat" onclick="toggleFilter('cat','Expertise / Évaluation',this)">Expertise / Éval.</div>
+          <div class="pill cat" onclick="toggleFilter('cat','Promotion / Aménagement / Foncier',this)">Promotion / Foncier</div>
+          <div class="pill cat" onclick="toggleFilter('cat','Transaction / Commercialisation Immo',this)">Transaction Immo</div>
+          <div class="pill cat" onclick="toggleFilter('cat','Gestion Immobilière',this)">Gestion Immobilière</div>
           <div class="pill cat" onclick="toggleFilter('cat','Architecture & Urbanisme',this)">Architecture</div>
-          <div class="pill cat" onclick="toggleFilter('cat','Maîtrise d\'Œuvre',this)">MOE / MOA</div>
-          <div class="pill cat" onclick="toggleFilter('cat','Bureau d\'Études / Ingénierie',this)">Bureau d'Études</div>
-          <div class="pill cat" onclick="toggleFilter('cat','Conduite de Travaux',this)">Conduite Travaux</div>
-          <div class="pill cat" onclick="toggleFilter('cat','Commercial / Foncier',this)">Commercial / Foncier</div>
-          <div class="pill cat" onclick="toggleFilter('cat','Juridique & Finance Immo',this)">Juridique & Finance</div>
-          <div class="pill cat" onclick="toggleFilter('cat','Support & Admin',this)">Support & Admin</div>
+          <div class="pill cat" onclick="toggleFilter('cat','MOA / MOE / Pilotage',this)">MOA / MOE / Pilotage</div>
+          <div class="pill cat" onclick="toggleFilter('cat','Études / Ingénierie / Économie',this)">Études / Ingénierie</div>
+          <div class="pill cat" onclick="toggleFilter('cat','Travaux / Chantier',this)">Travaux / Chantier</div>
+          <div class="pill cat" onclick="toggleFilter('cat','Métiers techniques / Maintenance',this)">Technique / Maintenance</div>
+          <div class="pill cat" onclick="toggleFilter('cat','Commerce BTP / Affaires',this)">Commerce BTP / Affaires</div>
+          <div class="pill cat" onclick="toggleFilter('cat','Fonctions support',this)">Fonctions support</div>
         </div>
       </div>
 
@@ -519,6 +518,7 @@ main {
           <div class="pill crm" onclick="toggleFilter('crm','tc',this)">T&Cs signés</div>
           <div class="pill crm" onclick="toggleFilter('crm','open',this)">Job ouvert</div>
           <div class="pill crm" onclick="toggleFilter('crm','client',this)">Client actif</div>
+          <div class="pill crm" onclick="toggleFilter('crm','prospect',this)">Prospect</div>
           <div class="pill crm" onclick="toggleFilter('crm','no-crm',this)">Hors CRM</div>
         </div>
       </div>
@@ -661,7 +661,7 @@ function updateChips() {
 }
 
 function crmLabel(v) {
-  return {tc:'T&Cs', open:'Job ouvert', client:'Client actif', 'no-crm':'Hors CRM'}[v] || v;
+  return {tc:'T&Cs', open:'Job ouvert', client:'Client actif', prospect:'Prospect', 'no-crm':'Hors CRM'}[v] || v;
 }
 
 function removeFilter(type, value) {
@@ -707,6 +707,7 @@ function applyFilters() {
       if (filters.crm.has('tc') && j.has_tc) ok = true;
       if (filters.crm.has('open') && j.has_open_job) ok = true;
       if (filters.crm.has('client') && j.is_client) ok = true;
+      if (filters.crm.has('prospect') && j.is_prospect) ok = true;
       if (filters.crm.has('no-crm') && !j.crm_link) ok = true;
       if (!ok) return false;
     }
@@ -755,11 +756,12 @@ function renderJobs(jobs) {
     var cardClass = 'job-card' + (saved ? ' saved' : '') + (j.is_client ? ' is-client' : j.is_recruiter ? ' is-recruiter' : '');
 
     var crmHtml = '';
-    if (j.has_tc || j.has_open_job || j.is_client || j.consultant) {
+    if (j.crm_link) {
       crmHtml = '<div class="jcrm-inline">';
       if (j.has_tc) crmHtml += '<div class="crm-dot tc" title="T&Cs signés"></div>';
       if (j.has_open_job) crmHtml += '<div class="crm-dot open-job" title="Job ouvert"></div>';
-      if (j.crm_link) crmHtml += '<a class="crm-link" href="'+j.crm_link+'" target="_blank" onclick="event.stopPropagation()">CRM</a>';
+      if (j.is_prospect) crmHtml += '<div class="crm-dot prospect" title="Prospect : présent dans RecruitCRM, sans T&Cs signés"></div>';
+      crmHtml += '<a class="crm-link" href="'+j.crm_link+'" target="_blank" rel="noopener" onclick="event.stopPropagation()" title="Ouvrir la fiche entreprise RecruitCRM">RCRM ↗</a>';
       if (j.consultant) crmHtml += '<span class="consultant-badge">'+escHtml(j.consultant)+'</span>';
       crmHtml += '</div>';
     }
