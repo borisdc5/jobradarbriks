@@ -410,12 +410,10 @@ def _apec_results(payload):
 
 def apec_search(query, page_size=100, start_index=0):
     """Interroge la recherche publique APEC, sans l'ancien CAS candidat."""
+    # L'API publique APEC n'accepte pas le champ `typeContrat`.
+    # Le filtrage CDI est donc effectué après récupération, si l'information
+    # de contrat est disponible dans l'offre.
     bodies = [
-        {
-            'pagination': {'range': page_size, 'startIndex': start_index},
-            'motsCles': query,
-            'typeContrat': ['101888'],  # CDI ; ignoré si le code évolue
-        },
         {
             'pagination': {'range': page_size, 'startIndex': start_index},
             'motsCles': query,
