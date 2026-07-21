@@ -9,8 +9,6 @@ from concurrent.futures import ThreadPoolExecutor
 # ── Secrets ──────────────────────────────────────────────────────────────────
 FT_CLIENT_ID     = os.getenv('FT_CLIENT_ID', '')
 FT_CLIENT_SECRET = os.getenv('FT_CLIENT_SECRET', '')
-APEC_EMAIL       = os.getenv('APEC_EMAIL', '')
-APEC_PASSWORD    = os.getenv('APEC_PASSWORD', '')
 RCRM_KEY         = os.getenv('RECRUITCRM_API_KEY', '')
 
 # ── Paths ─────────────────────────────────────────────────────────────────────
@@ -179,6 +177,52 @@ COMPANY_SIZES = {
 def normalize(s):
     return (s or '').lower().strip()
 
+# Termes suffisamment discriminants pour éviter les faux positifs génériques.
+BTP_TITLE_KEYWORDS = [
+    'immobilier', 'foncier', 'btp', 'bâtiment', 'construction', 'travaux',
+    'chantier', 'promoteur', 'promotion', 'asset manager', 'property manager',
+    'facility manager', 'facilities manager', 'négociateur immobilier',
+    'agent immobilier', 'transaction immobilière', 'gérance immobilière',
+    'architecte', 'urbanis', "bureau d'études", 'structure', 'génie civil',
+    "maître d'œuvre", 'maitre oeuvre', 'moe', 'moa', 'amo', 'géotechnique',
+    'vrd', 'économiste de la construction', 'métreur', 'opc', 'patrimoine',
+    'juriste immobilier', 'droit de la construction', 'notaire', 'scpi',
+    'conducteur de travaux', 'conducteur travaux', 'chef de chantier',
+    'ingénieur travaux', 'directeur de travaux', 'responsable travaux',
+    'chargé d’affaires btp', "chargé d'affaires btp", 'ingénieur cvc',
+    'ingénieur fluides', 'ingénieur bâtiment', 'diagnostiqueur immobilier',
+]
+
+BTP_DESCRIPTION_KEYWORDS = [
+    'construction', 'bâtiment', 'immobilier', 'génie civil', 'travaux publics',
+    'maîtrise d’œuvre', "maîtrise d'ouvrage", 'promotion immobilière',
+]
+
+EXCLUDED_TITLE_KEYWORDS = [
+    'développeur logiciel', 'software developer', 'data scientist', 'devops',
+    'ux designer', 'ui designer', 'community manager', 'social media manager',
+]
+
+def is_relevant_btp_job(title, description=''):
+    """Filtre métier commun aux sources, centré sur le titre.
+
+    La description ne sert qu'en renfort afin de ne pas faire remonter tous les
+    postes support d'une entreprise du bâtiment.
+    """
+    title_norm = normalize(title)
+    description_norm = normalize(description)
+    if any(kw in title_norm for kw in EXCLUDED_TITLE_KEYWORDS):
+        return False
+    if any(kw in title_norm for kw in BTP_TITLE_KEYWORDS):
+        return True
+    # Les titres très métier peuvent ne pas contenir explicitement « BTP ».
+    classified = classify_category(title, description[:800])
+    if classified not in ('Autre', 'Support & Admin'):
+        return True
+    return any(kw in description_norm for kw in BTP_DESCRIPTION_KEYWORDS) and any(
+        role in title_norm for role in ('ingénieur', 'responsable', 'directeur', 'chef de projet', 'chargé d’affaires', "chargé d'affaires")
+    )
+
 def classify_category(title, description=''):
     text = normalize(title + ' ' + description)
     text = re.sub(r'[./]', ' ', text)  # "Chef.Fe" / "H/F" → espaces, pour matcher les mots-clés
@@ -310,23 +354,7 @@ def fetch_france_travail():
             date_str = (r.get('dateCreation') or '')[:10]
             desc     = r.get('description', '')
 
-            # Filtre pertinence : doit avoir un mot-clé du secteur dans le titre
-            title_lower = normalize(title)
-            relevant = any(
-                kw in title_lower
-                for kw in [
-                    'immobilier', 'foncier', 'btp', 'bâtiment', 'construction',
-                    'travaux', 'chantier', 'promoteur', 'promotion',
-                    'asset', 'property', 'facilities', 'facility',
-                    'négociateur', 'agent', 'transaction', 'gérance',
-                    'architecte', 'urbanis', 'bureau d\'études', 'structure',
-                    'génie civil', 'maître d\'œuvre', 'moe', 'moa', 'amo',
-                    'géotechnique', 'vrd', 'expert', 'évaluateur', 'patrimoine',
-                    'juriste', 'notaire', 'investissement', 'scpi',
-                    'conducteur', 'chef de chantier', 'ingénieur travaux',
-                ]
-            )
-            if not relevant:
+            if not is_relevant_btp_job(title, desc):
                 continue
 
             jobs.append({
@@ -352,90 +380,129 @@ def fetch_france_travail():
 # APEC
 # ─────────────────────────────────────────────────────────────────────────────
 
-def apec_get_token():
-    if not APEC_EMAIL or not APEC_PASSWORD:
-        print('  [APEC] Pas de credentials — skip')
-        return None
-    url  = 'https://authentification-candidat.apec.fr/cas/v1/tickets'
-    data = urllib.parse.urlencode({'username': APEC_EMAIL, 'password': APEC_PASSWORD}).encode()
-    req  = urllib.request.Request(url, data=data, method='POST')
-    req.add_header('Content-Type', 'application/x-www-form-urlencoded')
-    try:
-        resp = urllib.request.urlopen(req, context=ctx, timeout=15)
-        loc  = resp.headers.get('Location', '')
-        tgt  = loc.split('/')[-1] if loc else ''
-        if not tgt:
-            print('  [APEC] Auth échouée : pas de TGT dans la réponse')
-            return None
-        # Récupère le ST
-        url2  = f'https://authentification-candidat.apec.fr/cas/v1/tickets/{tgt}'
-        data2 = urllib.parse.urlencode({'service': 'https://www.apec.fr'}).encode()
-        req2  = urllib.request.Request(url2, data=data2, method='POST')
-        req2.add_header('Content-Type', 'application/x-www-form-urlencoded')
-        resp2 = urllib.request.urlopen(req2, context=ctx, timeout=15)
-        return resp2.read().decode('utf-8').strip()
-    except Exception as e:
-        print(f'  [APEC] Auth error: {e}')
-        return None
-
 APEC_QUERIES = [
-    'immobilier', 'BTP', 'construction', 'foncier',
-    'asset manager', 'conducteur travaux', 'maître oeuvre',
-    'promoteur immobilier', 'property management',
+    'conducteur travaux', 'chef chantier', 'directeur travaux',
+    'ingénieur bâtiment', 'bureau études', 'génie civil',
+    'promotion immobilière', 'responsable programmes', 'foncier',
+    'asset manager immobilier', 'property manager', 'architecte',
+    'maîtrise oeuvre', 'économiste construction',
 ]
+
+APEC_SEARCH_URL = 'https://www.apec.fr/cms/webservices/rechercheOffre'
+
+
+def _apec_results(payload):
+    """Tolère les variantes de structure observées dans l'API APEC."""
+    if isinstance(payload, list):
+        return payload
+    if not isinstance(payload, dict):
+        return []
+    for key in ('resultats', 'offres', 'results'):
+        value = payload.get(key)
+        if isinstance(value, list):
+            return value
+    # Certaines versions enveloppent la réponse dans un objet data.
+    data = payload.get('data')
+    if isinstance(data, dict):
+        return _apec_results(data)
+    return []
+
+
+def apec_search(query, page_size=100, start_index=0):
+    """Interroge la recherche publique APEC, sans l'ancien CAS candidat."""
+    bodies = [
+        {
+            'pagination': {'range': page_size, 'startIndex': start_index},
+            'motsCles': query,
+            'typeContrat': ['101888'],  # CDI ; ignoré si le code évolue
+        },
+        {
+            'pagination': {'range': page_size, 'startIndex': start_index},
+            'motsCles': query,
+        },
+    ]
+    last_error = None
+    for body in bodies:
+        req = urllib.request.Request(
+            APEC_SEARCH_URL,
+            data=json.dumps(body).encode('utf-8'),
+            method='POST',
+        )
+        req.add_header('Content-Type', 'application/json')
+        req.add_header('Accept', 'application/json')
+        req.add_header('User-Agent', 'Mozilla/5.0 JobRadarBriks/1.0')
+        try:
+            resp = urllib.request.urlopen(req, context=ctx, timeout=25)
+            return _apec_results(json.loads(resp.read()))
+        except urllib.error.HTTPError as e:
+            last_error = f'HTTP {e.code}: {e.read().decode("utf-8", errors="replace")[:250]}'
+            if e.code not in (400, 422):
+                break
+        except Exception as e:
+            last_error = str(e)
+            break
+    print(f'  [APEC] Query "{query}" error: {last_error}')
+    return []
+
+
+def _apec_date(value):
+    if not value:
+        return ''
+    value = str(value)
+    # ISO classique ou timestamp en millisecondes.
+    if value.isdigit():
+        try:
+            ts = int(value) / (1000 if len(value) > 10 else 1)
+            return datetime.fromtimestamp(ts, tz=timezone.utc).strftime('%Y-%m-%d')
+        except Exception:
+            return ''
+    m = re.search(r'(\d{4})-(\d{2})-(\d{2})', value)
+    if m:
+        return '-'.join(m.groups())
+    m = re.search(r'(\d{2})/(\d{2})/(\d{4})', value)
+    if m:
+        return f'{m.group(3)}-{m.group(2)}-{m.group(1)}'
+    return value[:10]
+
 
 def fetch_apec():
     print('\n[APEC] Récupération des offres cadres BTP/Immo...')
-    token = apec_get_token()
-    if not token:
-        return []
-
     seen, jobs = set(), []
-    base = 'https://www.apec.fr/cms/webservices/rechercherOffre/parCriteres'
 
     for q in APEC_QUERIES:
-        params = urllib.parse.urlencode({
-            'motsCles': q,
-            'typeContrat': 'CDI',
-            'nbreOffresParPage': 50,
-            'numeroPage': 0,
-        })
-        url = base + '?' + params
-        req = urllib.request.Request(url)
-        req.add_header('kerlAuthentification', token)
-        req.add_header('Accept', 'application/json')
-        try:
-            resp = urllib.request.urlopen(req, context=ctx, timeout=20)
-            data = json.loads(resp.read())
-            results = data.get('resultats', [])
-            for r in results:
-                jid = str(r.get('numeroOffre') or r.get('id') or '')
-                if jid in seen:
-                    continue
-                seen.add(jid)
-                title   = r.get('intitulePoste') or r.get('title', '')
-                company = r.get('nomEmployeur') or r.get('company', '')
-                loc     = r.get('localisation') or r.get('location', '')
-                if isinstance(loc, dict):
-                    loc = loc.get('libelle', '')
-                date_str = (r.get('dateCreation') or '')[:10]
-                jobs.append({
-                    'id':           f'apec_{jid}',
-                    'title':        title,
-                    'company':      company,
-                    'location':     _clean_location(loc),
-                    'url':          f'https://www.apec.fr/candidat/recherche-emploi.html/emploi/detail-offre/{jid}',
-                    'source':       'APEC',
-                    'date':         date_str,
-                    'days_old':     days_ago(date_str),
-                    'category':     classify_category(title),
-                    'size':         get_company_size(company),
-                    'is_recruiter': is_recruitment_firm(company),
-                    'description':  '',
-                })
-        except Exception as e:
-            print(f'  [APEC] Query "{q}" error: {e}')
-        time.sleep(0.3)
+        for r in apec_search(q):
+            jid = str(r.get('numeroOffre') or r.get('idOffre') or r.get('id') or '')
+            if not jid or jid in seen:
+                continue
+
+            title = r.get('intitule') or r.get('intitulePoste') or r.get('title') or ''
+            company = r.get('nomCommercial') or r.get('nomEmployeur') or r.get('company') or ''
+            loc = r.get('lieuTexte') or r.get('localisation') or r.get('location') or ''
+            if isinstance(loc, dict):
+                loc = loc.get('libelle') or loc.get('label') or loc.get('ville') or ''
+            description = r.get('texteHtml') or r.get('description') or r.get('texte') or ''
+            description = re.sub(r'<[^>]+>', ' ', str(description))
+            date_str = _apec_date(r.get('datePublication') or r.get('dateCreation'))
+
+            if not is_relevant_btp_job(title, description):
+                continue
+
+            seen.add(jid)
+            jobs.append({
+                'id':           f'apec_{jid}',
+                'title':        title,
+                'company':      company,
+                'location':     _clean_location(str(loc)),
+                'url':          f'https://www.apec.fr/candidat/recherche-emploi.html/emploi/detail-offre/{jid}',
+                'source':       'APEC',
+                'date':         date_str,
+                'days_old':     days_ago(date_str),
+                'category':     classify_category(title, description[:800]),
+                'size':         get_company_size(company),
+                'is_recruiter': is_recruitment_firm(company),
+                'description':  re.sub(r'\s+', ' ', description).strip()[:300],
+            })
+        time.sleep(0.25)
 
     print(f'  → {len(jobs)} offres APEC')
     return jobs
@@ -542,15 +609,12 @@ def fetch_hellowork():
     with ThreadPoolExecutor(max_workers=4) as ex:
         all_results = list(ex.map(fetch_sector_page, tasks))
 
-    excluded_kw = ['développeur', 'developer', 'data scientist', 'devops', 'ux designer',
-                   'ui designer', 'community manager', 'social media']
-
     for results in all_results:
         for r in results:
             if r['jid'] in seen:
                 continue
             seen.add(r['jid'])
-            if any(kw in normalize(r['title']) for kw in excluded_kw):
+            if not is_relevant_btp_job(r['title']):
                 continue
             jobs.append({
                 'id':           f'hw_{r["jid"]}',
@@ -650,6 +714,10 @@ def _clean_location(loc):
     if m:
         dept, city = m.group(1), m.group(2).title()
         return city
+    # "Metz - 57" style (APEC)
+    m_city_dept = re.match(r'^(.+?)\s*[-–]\s*(\d{2,3})$', loc)
+    if m_city_dept:
+        return m_city_dept.group(1).strip().title()
     # "75 - Paris" style
     m2 = re.match(r'^(\d{2})\s*[-–]\s*(.+)$', loc)
     if m2:
@@ -774,7 +842,19 @@ def main():
         apec_jobs   = apec_future.result()
         hw_jobs     = hw_future.result()
 
+    source_counts = {
+        'France Travail': len(ft_jobs),
+        'APEC': len(apec_jobs),
+        'HelloWork': len(hw_jobs),
+    }
+    print('\n[Sources] ' + ' | '.join(f'{name}: {count}' for name, count in source_counts.items()))
+
     all_jobs = ft_jobs + apec_jobs + hw_jobs
+    if not all_jobs:
+        raise RuntimeError(
+            'Aucune offre récupérée sur les 3 sources. Le workflow est arrêté '
+            'pour éviter un faux succès et un site vide.'
+        )
 
     # 2. Dédoublonnage par titre + entreprise
     seen_keys = set()
